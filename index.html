@@ -1580,7 +1580,7 @@ async function liveConnect(){
     const model = (state.profile.geminiModel||"").trim() || "gemini-3.8-live";
     const setupMsg = { setup:{
       model: "models/"+model,
-      responseModalities: ["AUDIO"],
+      generationConfig: { responseModalities: ["AUDIO"] },
       systemInstruction: { parts:[{ text: liveBuildSystemInstruction() }] },
       tools: liveBuildTools(),
       inputAudioTranscription: {},
