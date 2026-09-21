@@ -1607,8 +1607,10 @@ async function liveConnect(){
     liveStopCapture();
     liveFinalizeStreamingBubbles();
     setOrb("idle");
-    if(wasConnecting) showToast("Couldn't connect to Gemini Live — check the API key and model name in Settings.","error");
-    else if(e && e.code && e.code!==1000) showToast("Live session ended unexpectedly (code "+e.code+").","error");
+    console.warn("live websocket closed", { code: e && e.code, reason: e && e.reason, wasClean: e && e.wasClean });
+    const detail = (e && (e.code || e.reason)) ? " [code "+(e&&e.code)+(e&&e.reason?": "+e.reason:"")+"]" : " [code 1006 — browsers hide the real reason for this one; usually an invalid/unauthorized API key or a model name Live doesn't support]";
+    if(wasConnecting) showToast("Couldn't connect to Gemini Live — check the API key and model name in Settings."+detail,"error");
+    else if(e && e.code && e.code!==1000) showToast("Live session ended unexpectedly."+detail,"error");
   };
 }
 
