@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JAGU — Standalone Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <canvas id="field-canvas"></canvas>
+
+  <header id="topbar">
+    <div id="topbar-left">
+      <span id="clock">--:--</span>
+      <span class="status-dots" title="System status">
+        <span id="status-ai" class="status-dot" title="AI connection"></span>
+        <span id="status-mem" class="status-dot" title="Memory"></span>
+      </span>
+    </div>
+    <div id="topbar-title">JAGU</div>
+    <button id="mute-btn" class="icon-btn" title="Mute voice replies" aria-label="Mute voice replies">🔊</button>
+  </header>
+
+  <div id="frame-banner" class="frame-banner hidden">
+    <div class="frame-banner-row">
+      <span>⚠ Voice needs its own tab — embedded previews block the mic.</span>
+    </div>
+    <div class="frame-banner-row">
+      <input id="frame-banner-url" class="frame-url" type="text" readonly>
+      <button id="frame-banner-copy" class="btn-tiny">Copy link</button>
+    </div>
+  </div>
+
+  <main id="screens">
+
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+      <div class="greeting">
+        <h1 id="greeting-text">Hello</h1>
+        <p id="status-line" class="status-line">Loading your day…</p>
+      </div>
+
+      <div class="orb-wrap hud-frame">
+        <button id="orb" class="orb state-idle" aria-label="Talk to JAGU">
+          <span class="portal-field"></span>
+          <span class="orb-pulse p1"></span>
+          <span class="orb-pulse p2"></span>
+          <span class="orb-spin"></span>
+          <span class="orb-spin spin2"></span>
+          <span class="orb-ring ring1"></span>
+          <span class="orb-ring ring2"></span>
+          <span class="orb-core"></span>
+        </button>
+        <p id="orb-caption" class="orb-caption">TAP TO TALK</p>
+      </div>
+
+      <div id="quick-suggestion" class="suggestion-card hud-frame hidden">
+        <div class="suggestion-label">Suggested next</div>
+        <div id="suggestion-title" class="suggestion-title">—</div>
+        <div id="suggestion-meta" class="suggestion-meta">—</div>
+        <button id="suggestion-start" class="btn-small">Start focus session</button>
+      </div>
+
+      <div id="transcript" class="transcript" aria-live="polite"></div>
+
+      <form id="text-form" class="text-form">
+        <input id="text-input" type="text" placeholder="Type to JAGU…" autocomplete="off">
+        <button type="submit" class="send-btn" aria-label="Send">➤</button>
+      </form>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="screen-dashboard" class="screen">
+      <h1 class="screen-title">Dashboard</h1>
+      <div class="card hud-frame" id="today-card"></div>
+      <h2 class="section-heading">Learning progress</h2>
+      <div id="progress-list" class="stack"></div>
+      <h2 class="section-heading">Coming up</h2>
+      <div id="events-list" class="stack"></div>
+      <h2 class="section-heading">Recent notes</h2>
+      <div id="dash-notes" class="card"></div>
+    </section>
+
+    <!-- LEARNING -->
+    <section id="screen-learning" class="screen">
+      <div class="screen-title-row">
+        <h1 class="screen-title">Learning</h1>
+        <button id="add-project-btn" class="btn-small">+ New</button>
+      </div>
+      <div id="projects-list" class="stack"></div>
+    </section>
+
+    <!-- TIMETABLE -->
+    <section id="screen-timetable" class="screen">
+      <div class="screen-title-row">
+        <h1 class="screen-title">Timetable</h1>
+        <div class="row-gap">
+          <button id="scan-timetable-btn" class="btn-small ghost">Scan photo</button>
+          <button id="import-timetable-btn" class="btn-small ghost">Import</button>
+          <button id="add-timetable-btn" class="btn-small">+ Add</button>
+        </div>
+      </div>
+      <div id="day-tabs" class="day-tabs"></div>
+      <div id="timetable-list" class="stack"></div>
+      <input type="file" id="timetable-photo-input" accept="image/*" class="hidden">
+
+      <h2 class="section-heading">Events</h2>
+      <div id="events-list-2" class="stack"></div>
+      <button id="add-event-btn" class="btn-small ghost" style="margin-top:12px;">+ Add event</button>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="screen-settings" class="screen">
+      <h1 class="screen-title">Settings</h1>
+
+      <div class="field-group">
+        <label class="field-label">Your name</label>
+        <input id="settings-name" class="text-field" type="text" placeholder="Your name">
+      </div>
+
+      <h2 class="section-heading">AI connection — standalone edition</h2>
+      <div class="field-group">
+        <label class="field-label">Provider</label>
+        <select id="settings-provider" class="text-field">
+          <option value="gemini">Google Gemini — free, no card needed</option>
+          <option value="anthropic">Anthropic Claude — paid, needs billing</option>
+        </select>
+      </div>
+
+      <div id="gemini-fields">
+        <div class="field-group">
+          <label class="field-label">Google Gemini API key</label>
+          <input id="settings-gemini-key" class="text-field" type="password" placeholder="AIza...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Gemini model</label>
+          <input id="settings-gemini-model" class="text-field" type="text" placeholder="gemini-flash-latest">
+        </div>
+        <p style="color:var(--text-faint); font-size:11.5px; margin-top:-8px; margin-bottom:20px; line-height:1.6;">
+          Free, no credit card: get a key at <span class="hud-readout">aistudio.google.com</span> → Get API key. Saved only in this browser and sent only to Google's API. If the model name contains "live" (e.g. <span class="hud-readout">gemini-3.8-live</span>), tapping the orb opens a real-time voice call — JAGU listens and speaks continuously until you tap again, instead of one exchange at a time.
+        </p>
+      </div>
+
+      <div id="anthropic-fields">
+        <div class="field-group">
+          <label class="field-label">Anthropic API key</label>
+          <input id="settings-apikey" class="text-field" type="password" placeholder="sk-ant-...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Model</label>
+          <input id="settings-model" class="text-field" type="text" placeholder="claude-sonnet-5">
+        </div>
+        <p style="color:var(--text-faint); font-size:11.5px; margin-top:-8px; margin-bottom:20px; line-height:1.6;">
+          Requires a console.anthropic.com account with billing enabled. Saved only in this browser and sent only to Anthropic's API.
+        </p>
+      </div>
+
+      <h2 class="section-heading">Voice</h2>
+      <div class="field-group">
+        <label class="field-label">JAGU's voice</label>
+        <select id="settings-voice" class="text-field"></select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Speaking speed</label>
+        <input id="settings-rate" type="range" min="0.7" max="1.3" step="0.05" value="1">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Pitch</label>
+        <input id="settings-pitch" type="range" min="0.7" max="1.3" step="0.05" value="1">
+      </div>
+      <div class="settings-row">
+        <span>Speak replies aloud</span>
+        <button id="toggle-voice-out" class="switch on"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <span>Stay in conversation mode</span>
+        <button id="toggle-convo-mode" class="switch"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <span>Dark appearance</span>
+        <button id="toggle-theme" class="switch on"><span class="switch-knob"></span></button>
+      </div>
+
+      <h2 class="section-heading">Voice diagnostics</h2>
+      <div class="card" id="diag-card"></div>
+      <div class="row-gap" style="margin-top:10px;">
+        <button id="diag-refresh" class="btn-small ghost">Re-check</button>
+        <button id="diag-copy" class="btn-small ghost">Copy diagnostics</button>
+      </div>
+
+      <h2 class="section-heading">Data</h2>
+      <button id="export-btn" class="btn-full ghost" style="margin-bottom:10px;">Export backup</button>
+      <button id="clear-btn" class="btn-full ghost" style="color:var(--danger); border-color:var(--danger);">Clear all data</button>
+
+      <p style="color:var(--text-faint); font-size:12px; margin-top:22px; line-height:1.6;">
+        Standalone edition — everything (projects, tasks, timetable, memory) is saved only in this browser's local storage on this device. Nothing syncs anywhere. Voice recognition needs a Chromium-based browser (Chrome / Edge); typing always works.
+      </p>
+    </section>
+
+  </main>
+
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-screen="home">🏠<span>Home</span></button>
+    <button class="nav-btn" data-screen="dashboard">📊<span>Dashboard</span></button>
+    <button class="nav-btn" data-screen="learning">📚<span>Learning</span></button>
+    <button class="nav-btn" data-screen="timetable">🗓<span>Timetable</span></button>
+    <button class="nav-btn" data-screen="settings">⚙<span>Settings</span></button>
+  </nav>
+
+  <!-- FOCUS SESSION OVERLAY -->
+  <div id="focus-overlay" class="overlay hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <p class="timer-label" id="focus-label">Focus session</p>
+      <p class="timer-task" id="focus-task">—</p>
+      <div class="timer-display" id="focus-clock">25:00</div>
+      <div class="timer-controls">
+        <button id="focus-pause" class="btn-full ghost">Pause</button>
+        <button id="focus-stop" class="btn-full" style="background:var(--danger); color:#fff;">Finish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERIC MODAL -->
+  <div id="modal-root" class="overlay hidden"></div>
+
+  <!-- ONBOARDING -->
+  <div id="onboarding" class="overlay center hidden">
+    <div class="sheet onboarding-sheet" style="border-radius:26px;">
+      <div style="text-align:center; margin-bottom:6px;">
+        <p class="hud-readout" style="font-size:10.5px; letter-spacing:.12em; color:var(--accent); margin-bottom:14px;">◆ SYSTEM ONLINE</p>
+        <div class="orb state-idle" style="width:96px;height:96px;margin:0 auto 18px;">
+          <span class="portal-field"></span>
+          <span class="orb-pulse p1"></span>
+          <span class="orb-pulse p2"></span>
+          <span class="orb-spin"></span>
+          <span class="orb-spin spin2"></span>
+          <span class="orb-core"></span>
+        </div>
+      </div>
+      <p class="sheet-title" style="text-align:center;">Hey, I'm JAGU</p>
+      <p style="color:var(--text-dim); font-size:14px; text-align:center; margin-bottom:22px; line-height:1.55;">
+        Your personal learning &amp; time companion. I'll remember your projects, timetable and progress, so you can just talk to me.
+      </p>
+      <label class="field-label">What should I call you?</label>
+      <input id="onboarding-name" class="text-field" type="text" value="Tahira" style="margin-bottom:18px;">
+      <button id="onboarding-start" class="btn-full">Let's start</button>
+    </div>
+  </div>
+
+  <div id="toast-root" class="toast-root"></div>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
