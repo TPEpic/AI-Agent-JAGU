@@ -474,7 +474,7 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
           <input id="settings-gemini-model" class="text-field" type="text" placeholder="gemini-flash-latest">
         </div>
         <p style="color:var(--text-faint); font-size:11.5px; margin-top:-8px; margin-bottom:20px; line-height:1.6;">
-          Free, no credit card: get a key at <span class="hud-readout">aistudio.google.com</span> → Get API key. Saved only in this browser and sent only to Google's API. If the model name contains "live" (e.g. <span class="hud-readout">gemini-3.8-live</span>), tapping the orb opens a real-time voice call — JAGU listens and speaks continuously until you tap again, instead of one exchange at a time.
+          Free, no credit card: get a key at <span class="hud-readout">aistudio.google.com</span> → Get API key. Saved only in this browser and sent only to Google's API. If the model name contains "live" (e.g. <span class="hud-readout">gemini-3.1-flash-live-preview</span>), tapping the orb opens a real-time voice call — JAGU listens and speaks continuously until you tap again, instead of one exchange at a time. Google renames Live models often — check aistudio.google.com's Live/Stream demo for the current exact name if this stops working.
         </p>
       </div>
 
@@ -1507,7 +1507,7 @@ function maybeContinueConversation(){
 /* ============================================================
    GEMINI LIVE API — real-time voice (WebSocket, BidiGenerateContent)
    Used automatically whenever the configured Gemini model name
-   contains "live" (e.g. gemini-3.8-live). Native mic streaming in,
+   contains "live" (e.g. gemini-3.1-flash-live-preview). Native mic streaming in,
    native audio streaming out, function calling for JAGU's actions —
    no browser STT/TTS involved at all for this path.
    ============================================================ */
@@ -1577,7 +1577,7 @@ async function liveConnect(){
   LIVE.ws = ws;
 
   ws.onopen = ()=>{
-    const model = (state.profile.geminiModel||"").trim() || "gemini-3.8-live";
+    const model = (state.profile.geminiModel||"").trim() || "gemini-3.1-flash-live-preview";
     const setupMsg = { setup:{
       model: "models/"+model,
       responseModalities: ["AUDIO"],
