@@ -1805,7 +1805,10 @@ $("#text-form").addEventListener("submit", (e)=>{
   const val = $("#text-input").value.trim();
   if(!val) return;
   $("#text-input").value = "";
-  if(isLiveModel() && LIVE.connected){ liveSendUserText(val); }
+  if(isLiveModel()){
+    if(LIVE.connected){ liveSendUserText(val); }
+    else { showToast("This model only works as a live voice call — tap the orb first, then type or speak.", "error"); }
+  }
   else { handleUserMessage(val); }
 });
 
