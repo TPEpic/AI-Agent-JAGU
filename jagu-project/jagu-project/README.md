@@ -41,8 +41,7 @@ jagu-project/
 │   │                        and carries out actions (add_task, add_event,
 │   │                        log_update, etc). Also the timetable photo-scanner.
 │   ├── settings.js                Onboarding + the Settings screen's field
-│   │                        wiring (name, voice, API keys, theme...).
-│   ├── field.js                    The animated digital-rain background.
+│   │                        wiring (name, voice, API keys...).
 │   └── diagnostics.js               Voice/connection diagnostics panel
 │                              (Settings → Voice diagnostics).
 ├── netlify.toml          Tells Netlify to publish the repo root with no
@@ -99,9 +98,8 @@ this page.
 
 Since it's an editor-friendly modular ES-modules project (not one giant
 file), each concern really is isolated — e.g. everything about the timetable
-photo-scanner lives in `js/ai.js`, everything about the animated background
-lives in `js/field.js`. `state.js` is the one file nearly everything else
-touches, since it owns the data model.
+photo-scanner lives in `js/ai.js`. `state.js` is the one file nearly
+everything else touches, since it owns the data model.
 
 If you add a new top-level function or constant to a file and another file
 needs it, `export` it there and `import { name } from './that-file.js';` at
