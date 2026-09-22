@@ -36,6 +36,16 @@ function liveBuildTools(){
         parameters:{ type:"OBJECT", properties:{ name:{type:"STRING"}, kind:{type:"STRING", description:"'project' or 'course'"} }, required:["name"] } },
       { name:"add_event", description:"Add a dated event or important date, such as an inspection or deadline.",
         parameters:{ type:"OBJECT", properties:{ title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD — resolve relative dates from the date reference table, never calculate it yourself"} }, required:["title","date"] } },
+      { name:"delete_event", description:"Remove an existing event, by its id.",
+        parameters:{ type:"OBJECT", properties:{ eventId:{type:"STRING"} }, required:["eventId"] } },
+      { name:"update_event", description:"Change an existing event's title and/or date, by its id. Only include fields that changed.",
+        parameters:{ type:"OBJECT", properties:{ eventId:{type:"STRING"}, title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD"} }, required:["eventId"] } },
+      { name:"delete_class", description:"Remove an existing class from the timetable, by its id.",
+        parameters:{ type:"OBJECT", properties:{ classId:{type:"STRING"} }, required:["classId"] } },
+      { name:"update_class", description:"Change an existing timetable class's day, time, subject or room, by its id. Only include fields that changed.",
+        parameters:{ type:"OBJECT", properties:{
+          classId:{type:"STRING"}, day:{type:"NUMBER", description:"0=Monday ... 6=Sunday"}, start:{type:"STRING", description:"HH:MM"}, end:{type:"STRING", description:"HH:MM"}, subject:{type:"STRING"}, room:{type:"STRING"}
+        }, required:["classId"] } },
       { name:"log_update", description:"Log a free-text progress update or note, optionally linked to a project by id.",
         parameters:{ type:"OBJECT", properties:{ projectId:{type:"STRING"}, text:{type:"STRING"} }, required:["text"] } },
     ]
@@ -46,8 +56,9 @@ function liveBuildSystemInstruction(){
   return `You are JAGU, Tahira's personal AI learning, growth and time-management companion, talking with her live by voice.
 Voice personality: natural, intelligent, warm, calm, professional, slightly futuristic, conversational. Never robotic, never over-enthusiastic, no motivational filler, no long speeches. Keep spoken replies short — 1 to 4 sentences unless she clearly wants more detail.
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
-When she asks you to add, complete, log, note or start something, actually call the matching function — don't just say you will.
+When she asks you to add, complete, delete, change, log, note or start something, actually call the matching function — don't just say you will.
 When she mentions a date or event, resolve it using the date reference table below and call add_event with the exact ISO date.
+When she asks to remove or change an existing event or timetable class, use its id from the state below and call delete_event/update_event or delete_class/update_class.
 
 CURRENT STATE:
 ` + buildContext();

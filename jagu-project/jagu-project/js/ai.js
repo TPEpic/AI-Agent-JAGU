@@ -1,5 +1,5 @@
 import { $, daysUntil, esc, fmtMinutes, minToLabel, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
-import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, dbAdd, dbUpdate, state } from './state.js';
+import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 import { addChatBubble, allPendingTasks, computeStatus, greetingWord, pickFallbackTask, projectById, projectProgress } from './render.js';
 import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
@@ -243,6 +243,12 @@ export function buildContext(){
     upcomingEvents.forEach(e=> lines.push("- ["+e.id+"] "+e.title+" in "+daysUntil(e.date)+" day(s) ("+e.date+")"));
   }
 
+  if(state.timetable.length){
+    lines.push("Timetable classes (use the id to delete or change one):");
+    state.timetable.slice().sort((a,b)=> a.day-b.day || timeToMin(a.start)-timeToMin(b.start))
+      .forEach(c=> lines.push("- ["+c.id+"] "+DAY_LABELS[c.day]+" "+c.start+"–"+c.end+" "+c.subject+(c.room?" (Room "+c.room+")":"")));
+  }
+
   if(state.memory.length){
     lines.push("Things Tahira has told JAGU to remember:");
     state.memory.slice(0,8).forEach(m=> lines.push("- "+m.text));
@@ -276,9 +282,11 @@ Replies must be 1 to 4 short sentences unless she explicitly asks for more detai
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id).
 When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — use add_event, and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself.
+When Tahira asks to remove, cancel or delete an event, use delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, use update_event.
+When Tahira asks to remove, cancel or delete a class from her timetable, use delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, use update_class, only including the fields that changed.
 When Tahira shares a status update, progress, or something that happened on a specific project or course ("I finished the literature review", "the Y11 mock is done", "struggled with the API today") — use log_update with that project's id from the Projects list above. If it clearly isn't tied to any listed project, use log_update with projectId null, or memory if it's more of a standing fact/preference than a one-off update.
 Reply with ONLY a JSON object, no other text, shaped exactly as:
-{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD"} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
+{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
 Use an empty actions array when no action is needed. Only include a memory fact for standing facts/preferences (not one-off updates, which belong in log_update, and not dated events, which belong in add_event).`;
 
 async function callJagu(userText){
@@ -318,6 +326,23 @@ export async function applyActions(actions){
         } else {
           console.warn("skipped add_event — bad date format", a);
         }
+      } else if(a.type==="delete_event" && a.eventId){
+        await dbDelete("events", a.eventId);
+      } else if(a.type==="update_event" && a.eventId){
+        const patch = {};
+        if(a.title) patch.title = a.title;
+        if(a.date && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) patch.date = a.date;
+        if(Object.keys(patch).length) await dbUpdate("events", a.eventId, patch);
+      } else if(a.type==="delete_class" && a.classId){
+        await dbDelete("timetable", a.classId);
+      } else if(a.type==="update_class" && a.classId){
+        const patch = {};
+        if(Number.isInteger(Number(a.day)) && a.day>=0 && a.day<=6) patch.day = Number(a.day);
+        if(a.start) patch.start = a.start;
+        if(a.end) patch.end = a.end;
+        if(a.subject) patch.subject = a.subject;
+        if(a.room !== undefined) patch.room = a.room||null;
+        if(Object.keys(patch).length) await dbUpdate("timetable", a.classId, patch);
       } else if(a.type==="log_update" && a.text){
         await dbAdd("updates", {projectId:a.projectId||null, text:a.text});
       }
