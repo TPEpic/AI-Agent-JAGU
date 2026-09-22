@@ -105,15 +105,19 @@ export async function dbAdd(col, data){
 }
 export async function dbUpdate(col, id, patch){
   const item = (state[col]||[]).find(x=>x.id===id);
-  if(!item) return;
+  if(!item) return false;
   Object.assign(item, patch);
   persist();
   renderAll();
+  return true;
 }
 export async function dbDelete(col, id){
-  if(!Array.isArray(state[col])) return;
+  if(!Array.isArray(state[col])) return false;
+  const before = state[col].length;
   state[col] = state[col].filter(x=>x.id!==id);
+  const found = state[col].length !== before;
   persist();
   renderAll();
+  return found;
 }
 

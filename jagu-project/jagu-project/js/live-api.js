@@ -58,7 +58,7 @@ Voice personality: natural, intelligent, warm, calm, professional, slightly futu
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 When she asks you to add, complete, delete, change, log, note or start something, actually call the matching function — don't just say you will.
 When she mentions a date or event, resolve it using the date reference table below and call add_event with the exact ISO date.
-When she asks to remove or change an existing event or timetable class, use its id from the state below and call delete_event/update_event or delete_class/update_class.
+When she asks to remove or change an existing event or timetable class, use its id from the state below and call delete_event/update_event or delete_class/update_class. Copy each id exactly as shown between the square brackets, without the brackets themselves.
 
 CURRENT STATE:
 ` + buildContext();
@@ -167,8 +167,13 @@ async function liveHandleToolCall(functionCalls){
   const responses = [];
   for(const fc of functionCalls){
     try{
-      await applyActions([ Object.assign({type: fc.name}, fc.args||{}) ]);
-      responses.push({ id: fc.id, name: fc.name, response:{ result:"ok" } });
+      const results = await applyActions([ Object.assign({type: fc.name}, fc.args||{}) ]);
+      const r = results[0];
+      if(r && r.ok===false){
+        responses.push({ id: fc.id, name: fc.name, response:{ result:"error", message: r.reason||"that id didn't match anything" } });
+      } else {
+        responses.push({ id: fc.id, name: fc.name, response:{ result:"ok" } });
+      }
     }catch(e){
       responses.push({ id: fc.id, name: fc.name, response:{ result:"error", message:String(e) } });
     }

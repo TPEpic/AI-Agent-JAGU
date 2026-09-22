@@ -280,7 +280,7 @@ const SYSTEM_RULES = `You are JAGU, Tahira's personal AI learning, growth and ti
 Voice personality: natural, intelligent, warm, calm, professional, slightly futuristic, conversational. Never robotic, never over-enthusiastic, no motivational filler, no long speeches.
 Replies must be 1 to 4 short sentences unless she explicitly asks for more detail.
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
-You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id).
+You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id). Copy each id exactly as shown between the square brackets, but do NOT include the brackets themselves in the id field.
 When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — use add_event, and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself.
 When Tahira asks to remove, cancel or delete an event, use delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, use update_event.
 When Tahira asks to remove, cancel or delete a class from her timetable, use delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, use update_class, only including the fields that changed.
@@ -308,33 +308,50 @@ async function callJagu(userText){
   }
 }
 
+// AI-provided ids sometimes arrive copied straight out of the "[id]" context
+// listing, brackets and all — strip that before matching against real ids.
+function cleanId(id){ return String(id==null?"":id).trim().replace(/^\[+|\]+$/g, ""); }
+
 export async function applyActions(actions){
+  const results = [];
   for(const a of actions){
     try{
       if(a.type==="add_task" && a.title){
         await dbAdd("tasks", {projectId:a.projectId||null, title:a.title, estMinutes:Number(a.estMinutes)||20, status:"pending", completedAt:null});
+        results.push({type:a.type, ok:true});
       } else if(a.type==="complete_task" && a.taskId){
-        await dbUpdate("tasks", a.taskId, {status:"done", completedAt:new Date().toISOString()});
+        const ok = await dbUpdate("tasks", cleanId(a.taskId), {status:"done", completedAt:new Date().toISOString()});
+        results.push({type:a.type, ok});
       } else if(a.type==="start_focus"){
-        const task = a.taskId ? state.tasks.find(t=>t.id===a.taskId) : null;
+        const task = a.taskId ? state.tasks.find(t=>t.id===cleanId(a.taskId)) : null;
         openFocusSession(task, Number(a.minutes)||25);
+        results.push({type:a.type, ok:true});
       } else if(a.type==="add_project" && a.name){
         await dbAdd("projects", {name:a.name, kind:a.kind||"course", deadline:null, progress:0, archived:false});
+        results.push({type:a.type, ok:true});
       } else if(a.type==="add_event" && a.title && a.date){
         if(/^\d{4}-\d{2}-\d{2}$/.test(a.date)){
           await dbAdd("events", {title:a.title, date:a.date, prepped:false});
+          results.push({type:a.type, ok:true});
         } else {
           console.warn("skipped add_event — bad date format", a);
+          results.push({type:a.type, ok:false, reason:"bad date format"});
         }
       } else if(a.type==="delete_event" && a.eventId){
-        await dbDelete("events", a.eventId);
+        const ok = await dbDelete("events", cleanId(a.eventId));
+        if(!ok) console.warn("delete_event — no event matched this id", a);
+        results.push({type:a.type, ok, reason: ok?null:"no event matched that id"});
       } else if(a.type==="update_event" && a.eventId){
         const patch = {};
         if(a.title) patch.title = a.title;
         if(a.date && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) patch.date = a.date;
-        if(Object.keys(patch).length) await dbUpdate("events", a.eventId, patch);
+        const ok = Object.keys(patch).length ? await dbUpdate("events", cleanId(a.eventId), patch) : false;
+        if(!ok) console.warn("update_event — no event matched this id, or nothing to change", a);
+        results.push({type:a.type, ok, reason: ok?null:"no event matched that id"});
       } else if(a.type==="delete_class" && a.classId){
-        await dbDelete("timetable", a.classId);
+        const ok = await dbDelete("timetable", cleanId(a.classId));
+        if(!ok) console.warn("delete_class — no class matched this id", a);
+        results.push({type:a.type, ok, reason: ok?null:"no class matched that id"});
       } else if(a.type==="update_class" && a.classId){
         const patch = {};
         if(Number.isInteger(Number(a.day)) && a.day>=0 && a.day<=6) patch.day = Number(a.day);
@@ -342,12 +359,18 @@ export async function applyActions(actions){
         if(a.end) patch.end = a.end;
         if(a.subject) patch.subject = a.subject;
         if(a.room !== undefined) patch.room = a.room||null;
-        if(Object.keys(patch).length) await dbUpdate("timetable", a.classId, patch);
+        const ok = Object.keys(patch).length ? await dbUpdate("timetable", cleanId(a.classId), patch) : false;
+        if(!ok) console.warn("update_class — no class matched this id, or nothing to change", a);
+        results.push({type:a.type, ok, reason: ok?null:"no class matched that id"});
       } else if(a.type==="log_update" && a.text){
         await dbAdd("updates", {projectId:a.projectId||null, text:a.text});
+        results.push({type:a.type, ok:true});
+      } else {
+        results.push({type:a.type, ok:false, reason:"unrecognized action or missing fields"});
       }
-    }catch(e){ console.warn("action failed", a, e); }
+    }catch(e){ console.warn("action failed", a, e); results.push({type:a.type, ok:false, reason:String(e)}); }
   }
+  return results;
 }
 
 export async function handleUserMessage(text){
@@ -356,7 +379,13 @@ export async function handleUserMessage(text){
   const res = await callJagu(text);
   addChatBubble("assistant", res.reply);
   if(res.memory){ dbAdd("memory", {text:res.memory}); }
-  if(res.actions && res.actions.length){ await applyActions(res.actions); }
+  if(res.actions && res.actions.length){
+    const results = await applyActions(res.actions);
+    const failed = results.find(r=> r.ok===false && /^(delete_event|update_event|delete_class|update_class|complete_task)$/.test(r.type));
+    if(failed){
+      showToast("Hmm, that didn't actually go through — I couldn't match that to anything. Try again, naming it more specifically.", "error");
+    }
+  }
   speak(res.reply);
 }
 
