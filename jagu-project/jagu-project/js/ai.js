@@ -4,6 +4,7 @@ import { addChatBubble, allPendingTasks, computeStatus, greetingWord, pickFallba
 import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { HAS_TTS, setOrb, speak, voiceUnlocked } from './voice.js';
+import { isLiveModel } from './live-api.js';
 
 // ── CLAUDE API ──
 async function callAI(promptText, opts){
@@ -67,7 +68,10 @@ async function callGeminiAPI(promptText, opts){
   opts = opts || {};
   const apiKey = (state.profile.geminiKey||"").trim();
   if(!apiKey){ const err = new Error("no_key"); err.code="no_key"; throw err; }
-  const model = (state.profile.geminiModel||"").trim() || "gemini-flash-latest";
+  const configuredModel = (state.profile.geminiModel||"").trim() || "gemini-flash-latest";
+  // Live models only support bidiGenerateContent over WebSocket — this is a
+  // one-shot REST call (photo scan, etc.), so fall back to a REST-capable model.
+  const model = isLiveModel() ? "gemini-flash-latest" : configuredModel;
   const parts = [];
   if(opts.imageBase64) parts.push({ inline_data: { mime_type: opts.imageMimeType||"image/jpeg", data: opts.imageBase64 } });
   parts.push({ text: promptText });
