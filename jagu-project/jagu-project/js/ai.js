@@ -281,10 +281,11 @@ Voice personality: natural, intelligent, warm, calm, professional, slightly futu
 Replies must be 1 to 4 short sentences unless she explicitly asks for more detail.
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id). Copy each id exactly as shown between the square brackets, but do NOT include the brackets themselves in the id field.
-When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — use add_event, and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself.
-When Tahira asks to remove, cancel or delete an event, use delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, use update_event.
-When Tahira asks to remove, cancel or delete a class from her timetable, use delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, use update_class, only including the fields that changed.
-When Tahira shares a status update, progress, or something that happened on a specific project or course ("I finished the literature review", "the Y11 mock is done", "struggled with the API today") — use log_update with that project's id from the Projects list above. If it clearly isn't tied to any listed project, use log_update with projectId null, or memory if it's more of a standing fact/preference than a one-off update.
+IMPORTANT — confirm before acting: for add_task, add_project, add_event, delete_event, update_event, delete_class and update_class, do NOT put the action in your actions list the first time it comes up. Instead reply with a short spoken confirmation of exactly what you're about to do (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and reply with an EMPTY actions array. Only include the action in actions on a LATER turn, once Tahira has clearly confirmed with something like "yes", "go ahead", "do it" or "correct" in her most recent message. If she says no or changes her mind, don't act — ask what she'd like instead. Never propose and act in the same turn. If her most recent message already reads as an unambiguous confirmation of something you just proposed (in "Recent conversation" below), go ahead and include the action now.
+When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — propose add_event (following the confirm-before-acting rule above), and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself.
+When Tahira asks to remove, cancel or delete an event, propose delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, propose update_event.
+When Tahira asks to remove, cancel or delete a class from her timetable, propose delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, propose update_class, only including the fields that changed.
+When Tahira shares a status update, progress, or something that happened on a specific project or course ("I finished the literature review", "the Y11 mock is done", "struggled with the API today") — use log_update right away (no confirmation needed for this one) with that project's id from the Projects list above. If it clearly isn't tied to any listed project, use log_update with projectId null, or memory if it's more of a standing fact/preference than a one-off update.
 Reply with ONLY a JSON object, no other text, shaped exactly as:
 {"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
 Use an empty actions array when no action is needed. Only include a memory fact for standing facts/preferences (not one-off updates, which belong in log_update, and not dated events, which belong in add_event).`;
@@ -311,14 +312,23 @@ async function callJagu(userText){
 // AI-provided ids sometimes arrive copied straight out of the "[id]" context
 // listing, brackets and all — strip that before matching against real ids.
 function cleanId(id){ return String(id==null?"":id).trim().replace(/^\[+|\]+$/g, ""); }
+function normText(s){ return String(s||"").trim().toLowerCase(); }
 
 export async function applyActions(actions){
   const results = [];
   for(const a of actions){
     try{
       if(a.type==="add_task" && a.title){
-        await dbAdd("tasks", {projectId:a.projectId||null, title:a.title, estMinutes:Number(a.estMinutes)||20, status:"pending", completedAt:null});
-        results.push({type:a.type, ok:true});
+        // A live voice turn can occasionally fire the same action more than
+        // once (e.g. a mid-sentence pause read as end-of-turn) — skip an
+        // exact repeat instead of creating duplicates.
+        const dupTask = state.tasks.some(t=> t.status==="pending" && (t.projectId||null)===(a.projectId||null) && normText(t.title)===normText(a.title));
+        if(dupTask){
+          results.push({type:a.type, ok:true, reason:"duplicate — already added, skipped"});
+        } else {
+          await dbAdd("tasks", {projectId:a.projectId||null, title:a.title, estMinutes:Number(a.estMinutes)||20, status:"pending", completedAt:null});
+          results.push({type:a.type, ok:true});
+        }
       } else if(a.type==="complete_task" && a.taskId){
         const ok = await dbUpdate("tasks", cleanId(a.taskId), {status:"done", completedAt:new Date().toISOString()});
         results.push({type:a.type, ok});
@@ -327,12 +337,22 @@ export async function applyActions(actions){
         openFocusSession(task, Number(a.minutes)||25);
         results.push({type:a.type, ok:true});
       } else if(a.type==="add_project" && a.name){
-        await dbAdd("projects", {name:a.name, kind:a.kind||"course", deadline:null, progress:0, archived:false});
-        results.push({type:a.type, ok:true});
+        const dupProject = state.projects.some(p=> !p.archived && normText(p.name)===normText(a.name));
+        if(dupProject){
+          results.push({type:a.type, ok:true, reason:"duplicate — already added, skipped"});
+        } else {
+          await dbAdd("projects", {name:a.name, kind:a.kind||"course", deadline:null, progress:0, archived:false});
+          results.push({type:a.type, ok:true});
+        }
       } else if(a.type==="add_event" && a.title && a.date){
         if(/^\d{4}-\d{2}-\d{2}$/.test(a.date)){
-          await dbAdd("events", {title:a.title, date:a.date, prepped:false});
-          results.push({type:a.type, ok:true});
+          const dupEvent = state.events.some(e=> e.date===a.date && normText(e.title)===normText(a.title));
+          if(dupEvent){
+            results.push({type:a.type, ok:true, reason:"duplicate — already on the events list, skipped"});
+          } else {
+            await dbAdd("events", {title:a.title, date:a.date, prepped:false});
+            results.push({type:a.type, ok:true});
+          }
         } else {
           console.warn("skipped add_event — bad date format", a);
           results.push({type:a.type, ok:false, reason:"bad date format"});
