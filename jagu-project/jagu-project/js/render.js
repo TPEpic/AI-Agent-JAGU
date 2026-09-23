@@ -259,7 +259,7 @@ function renderTimetable(){
   const entries = state.timetable.filter(e=>e.day===state.selectedDay).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
   const list = $("#timetable-list");
   list.innerHTML = entries.length ? entries.map(e=>{
-    return '<div class="tt-row"><div class="tt-time">'+e.start+'–'+e.end+'</div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
+    return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
   }).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
   $$('[data-tt]', list).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
 
@@ -303,8 +303,7 @@ export function renderSettingsFields(){
   $("#anthropic-fields").classList.toggle("hidden", isGemini);
   $("#toggle-voice-out").classList.toggle("on", !!state.profile.voiceOut);
   $("#toggle-convo-mode").classList.toggle("on", !!state.profile.convoMode);
-  $("#toggle-theme").classList.toggle("on", state.profile.theme!=="light");
-  $("#mute-btn").textContent = state.profile.voiceOut ? "🔊" : "🔇";
+  $("#mute-btn").classList.toggle("muted", !state.profile.voiceOut);
   if(voicesLoaded) populateVoices();
 }
 

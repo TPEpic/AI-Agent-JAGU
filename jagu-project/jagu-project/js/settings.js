@@ -20,7 +20,6 @@ $("#settings-rate").addEventListener("input", (e)=> saveProfile({rate:Number(e.t
 $("#settings-pitch").addEventListener("input", (e)=> saveProfile({pitch:Number(e.target.value)}));
 $("#toggle-voice-out").addEventListener("click", ()=> saveProfile({voiceOut: !state.profile.voiceOut}).then(renderSettingsFields));
 $("#toggle-convo-mode").addEventListener("click", ()=> saveProfile({convoMode: !state.profile.convoMode}).then(renderSettingsFields));
-$("#toggle-theme").addEventListener("click", ()=> saveProfile({theme: state.profile.theme==="light"?"dark":"light"}).then(renderSettingsFields));
 $("#mute-btn").addEventListener("click", ()=>{
   if(speechSynthesis.speaking) speechSynthesis.cancel();
   saveProfile({voiceOut: !state.profile.voiceOut}).then(renderSettingsFields);

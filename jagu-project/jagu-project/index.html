@@ -6,24 +6,22 @@
 <title>JAGU — Standalone Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div id="app">
 
-  <canvas id="field-canvas"></canvas>
-
   <header id="topbar">
-    <div id="topbar-left">
+    <div id="topbar-title">JAGU</div>
+    <div id="topbar-right">
       <span id="clock">--:--</span>
       <span class="status-dots" title="System status">
         <span id="status-ai" class="status-dot" title="AI connection"></span>
         <span id="status-mem" class="status-dot" title="Memory"></span>
       </span>
+      <button id="mute-btn" class="icon-btn" title="Mute voice replies" aria-label="Mute voice replies"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h4l5 4v-13l-5 4H4Z"/><path class="mute-wave" d="M16.5 9a4 4 0 0 1 0 6"/><path class="mute-wave" d="M19 7a7.5 7.5 0 0 1 0 10"/><path class="mute-slash" d="M4 4l16 16"/></svg></button>
     </div>
-    <div id="topbar-title">JAGU</div>
-    <button id="mute-btn" class="icon-btn" title="Mute voice replies" aria-label="Mute voice replies">🔊</button>
   </header>
 
   <div id="frame-banner" class="frame-banner hidden">
@@ -45,21 +43,14 @@
         <p id="status-line" class="status-line">Loading your day…</p>
       </div>
 
-      <div class="orb-wrap hud-frame">
+      <div class="orb-wrap">
         <button id="orb" class="orb state-idle" aria-label="Talk to JAGU">
-          <span class="portal-field"></span>
-          <span class="orb-pulse p1"></span>
-          <span class="orb-pulse p2"></span>
-          <span class="orb-spin"></span>
-          <span class="orb-spin spin2"></span>
-          <span class="orb-ring ring1"></span>
-          <span class="orb-ring ring2"></span>
-          <span class="orb-core"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3.5M9 20.5h6"/></svg>
         </button>
-        <p id="orb-caption" class="orb-caption">TAP TO TALK</p>
+        <p id="orb-caption" class="orb-caption">Tap to talk</p>
       </div>
 
-      <div id="quick-suggestion" class="suggestion-card hud-frame hidden">
+      <div id="quick-suggestion" class="suggestion-card hidden">
         <div class="suggestion-label">Suggested next</div>
         <div id="suggestion-title" class="suggestion-title">—</div>
         <div id="suggestion-meta" class="suggestion-meta">—</div>
@@ -77,7 +68,7 @@
     <!-- DASHBOARD -->
     <section id="screen-dashboard" class="screen">
       <h1 class="screen-title">Dashboard</h1>
-      <div class="card hud-frame" id="today-card"></div>
+      <div class="card" id="today-card"></div>
       <h2 class="section-heading">Learning progress</h2>
       <div id="progress-list" class="stack"></div>
       <h2 class="section-heading">Coming up</h2>
@@ -181,11 +172,6 @@
         <span>Stay in conversation mode</span>
         <button id="toggle-convo-mode" class="switch"><span class="switch-knob"></span></button>
       </div>
-      <div class="settings-row">
-        <span>Dark appearance</span>
-        <button id="toggle-theme" class="switch on"><span class="switch-knob"></span></button>
-      </div>
-
       <h2 class="section-heading">Voice diagnostics</h2>
       <div class="card" id="diag-card"></div>
       <div class="row-gap" style="margin-top:10px;">
@@ -206,11 +192,11 @@
 
   <nav id="bottom-nav">
     <div class="nav-inner">
-      <button class="nav-btn active" data-screen="home">🏠<span>Home</span></button>
-      <button class="nav-btn" data-screen="dashboard">📊<span>Dashboard</span></button>
-      <button class="nav-btn" data-screen="learning">📚<span>Learning</span></button>
-      <button class="nav-btn" data-screen="timetable">🗓<span>Timetable</span></button>
-      <button class="nav-btn" data-screen="settings">⚙<span>Settings</span></button>
+      <button class="nav-btn active" data-screen="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-5h2v5h4a1 1 0 0 0 1-1v-9"/></svg><span>Home</span></button>
+      <button class="nav-btn" data-screen="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11"/><path d="M12 20V6"/><path d="M19 20v-7"/></svg><span>Dashboard</span></button>
+      <button class="nav-btn" data-screen="learning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5c.8 0 1.5-.7 1.5-1.5v-13Z"/></svg><span>Learning</span></button>
+      <button class="nav-btn" data-screen="timetable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="1.5"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/></svg><span>Timetable</span></button>
+      <button class="nav-btn" data-screen="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/></svg><span>Settings</span></button>
     </div>
   </nav>
 
@@ -233,16 +219,10 @@
 
   <!-- ONBOARDING -->
   <div id="onboarding" class="overlay center hidden">
-    <div class="sheet onboarding-sheet" style="border-radius:26px;">
+    <div class="sheet onboarding-sheet" style="border-radius:22px;">
       <div style="text-align:center; margin-bottom:6px;">
-        <p class="hud-readout" style="font-size:10.5px; letter-spacing:.12em; color:var(--accent); margin-bottom:14px;">◆ SYSTEM ONLINE</p>
-        <div class="orb state-idle" style="width:96px;height:96px;margin:0 auto 18px;">
-          <span class="portal-field"></span>
-          <span class="orb-pulse p1"></span>
-          <span class="orb-pulse p2"></span>
-          <span class="orb-spin"></span>
-          <span class="orb-spin spin2"></span>
-          <span class="orb-core"></span>
+        <div class="orb state-idle" style="width:80px;height:80px;margin:0 auto 18px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3.5M9 20.5h6"/></svg>
         </div>
       </div>
       <p class="sheet-title" style="text-align:center;">Hey, I'm JAGU</p>
