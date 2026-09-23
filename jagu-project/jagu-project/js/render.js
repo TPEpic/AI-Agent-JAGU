@@ -19,6 +19,32 @@ function todaysEntries(){
   return state.timetable.filter(e=>e.day===idx).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
 }
 
+// ── WORK-DAY / TEACHING-LOAD STATS (Dashboard) ──
+const WORK_START_MIN = 9*60, WORK_END_MIN = 17*60;
+function overlapMinutes(startMin, endMin, winStart, winEnd){
+  return Math.max(0, Math.min(endMin, winEnd) - Math.max(startMin, winStart));
+}
+function computeTeachingStats(){
+  const today = todaysEntries();
+  let teachingTodayMin = 0;
+  today.forEach(e=> teachingTodayMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  let teachingWeekMin = 0;
+  state.timetable.forEach(e=> teachingWeekMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  const freeTodayMin = Math.max(0, (WORK_END_MIN-WORK_START_MIN) - teachingTodayMin);
+  return {
+    workDayMin: WORK_END_MIN-WORK_START_MIN,
+    teachingTodayMin, teachingTodayCount: today.length,
+    freeTodayMin, teachingWeekMin,
+  };
+}
+
+function ttRowHtml(e){
+  return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
+}
+function wireTtRowDeletes(root){
+  $$('[data-tt]', root).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
+}
+
 export function computeStatus(){
   const entries = todaysEntries();
   const nm = nowMin();
@@ -124,6 +150,29 @@ function renderSuggestion(){
 
 // ── RENDERING DASHBOARD ──
 function renderDashboard(){
+  const profileCard = $("#dash-profile");
+  const hasProfileInfo = state.profile.avatar || state.profile.role || state.profile.about;
+  profileCard.classList.toggle("hidden", !hasProfileInfo);
+  if(hasProfileInfo){
+    const initial = (state.profile.name||"?").trim().charAt(0).toUpperCase() || "?";
+    const avatarHtml = state.profile.avatar
+      ? '<div class="avatar" style="background-image:url(\''+state.profile.avatar+'\')"></div>'
+      : '<div class="avatar">'+esc(initial)+'</div>';
+    profileCard.innerHTML = avatarHtml
+      + '<div><div class="profile-name">'+esc(state.profile.name||"")+'</div>'
+      + (state.profile.role?'<div class="profile-role">'+esc(state.profile.role)+'</div>':'')
+      + (state.profile.about?'<div class="profile-about">'+esc(state.profile.about)+'</div>':'')
+      + '</div>';
+  }
+
+  const stats = computeTeachingStats();
+  $("#dash-stats").innerHTML = [
+    ["Work day", fmtMinutes(stats.workDayMin), "9:00 – 17:00"],
+    ["Teaching today", stats.teachingTodayCount+(stats.teachingTodayCount===1?" class":" classes"), fmtMinutes(stats.teachingTodayMin)],
+    ["Free today", fmtMinutes(stats.freeTodayMin), "within 9:00 – 17:00"],
+    ["Teaching this week", fmtMinutes(stats.teachingWeekMin), "across all days"],
+  ].map(([label,val,sub])=> '<div class="stat-tile"><div class="stat-value">'+esc(val)+'</div><div class="stat-label">'+esc(label)+' · '+esc(sub)+'</div></div>').join("");
+
   const st = computeStatus();
   const entries = todaysEntries();
   let html = "";
@@ -139,6 +188,10 @@ function renderDashboard(){
   $("#today-card").innerHTML = html || row("Today","Nothing scheduled");
 
   function row(l,v){ return '<div class="today-row"><span class="label">'+esc(l)+'</span><span class="val">'+v+'</span></div>'; }
+
+  const classesList = $("#today-classes-list");
+  classesList.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes today.</div>';
+  wireTtRowDeletes(classesList);
 
   const activeProjects = state.projects.filter(p=>!p.archived);
   $("#progress-list").innerHTML = activeProjects.length ? activeProjects.map(p=>{
@@ -161,14 +214,22 @@ function renderDashboard(){
 }
 
 function renderUpcomingEvents(sel){
-  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,6);
+  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,20);
   const target = $(sel);
   if(!target) return;
-  target.innerHTML = upcoming.length ? upcoming.map(e=>{
+  if(!upcoming.length){ target.innerHTML = '<div class="empty-state">No upcoming events.</div>'; return; }
+
+  function eventRow(e){
     const dleft = daysUntil(e.date);
     const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
     return '<div class="event-row"><div><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div><div class="event-badge">'+esc(when)+'</div></div>';
-  }).join("") : '<div class="empty-state">No upcoming events.</div>';
+  }
+  const work = upcoming.filter(e=> (e.category||"work")==="work");
+  const personal = upcoming.filter(e=> e.category==="personal");
+  let html = "";
+  if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(eventRow).join("");
+  if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(eventRow).join("");
+  target.innerHTML = html;
 }
 
 
@@ -258,10 +319,8 @@ function renderTimetable(){
 
   const entries = state.timetable.filter(e=>e.day===state.selectedDay).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
   const list = $("#timetable-list");
-  list.innerHTML = entries.length ? entries.map(e=>{
-    return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
-  }).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
-  $$('[data-tt]', list).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
+  list.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
+  wireTtRowDeletes(list);
 
   renderUpcomingEvents("#events-list-2");
 }
@@ -291,6 +350,13 @@ if("speechSynthesis" in window){
 
 export function renderSettingsFields(){
   $("#settings-name").value = state.profile.name || "";
+  $("#settings-role").value = state.profile.role || "";
+  $("#settings-about").value = state.profile.about || "";
+  const avatarPreview = $("#settings-avatar-preview");
+  const initial = (state.profile.name||"?").trim().charAt(0).toUpperCase() || "?";
+  avatarPreview.style.backgroundImage = state.profile.avatar ? "url('"+state.profile.avatar+"')" : "";
+  avatarPreview.textContent = state.profile.avatar ? "" : initial;
+  $("#settings-avatar-remove").classList.toggle("hidden", !state.profile.avatar);
   $("#settings-rate").value = state.profile.rate ?? 1;
   $("#settings-pitch").value = state.profile.pitch ?? 1;
   $("#settings-provider").value = state.profile.provider || "gemini";

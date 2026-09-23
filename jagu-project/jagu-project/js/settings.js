@@ -1,4 +1,4 @@
-import { $, showToast } from './helpers.js';
+import { $, resizeImageToDataUrl, showToast } from './helpers.js';
 import { LS_KEY, loadPersisted, saveProfile, state } from './state.js';
 import { refreshAiStatusDot, renderAll, renderSettingsFields } from './render.js';
 import { greet } from './ai.js';
@@ -14,7 +14,26 @@ $("#onboarding-start").addEventListener("click", async ()=>{
 
 
 // ── SETTINGS WIRING ──
-$("#settings-name").addEventListener("change", (e)=> saveProfile({name:e.target.value.trim()}));
+$("#settings-name").addEventListener("change", (e)=> saveProfile({name:e.target.value.trim()}).then(renderAll));
+$("#settings-role").addEventListener("change", (e)=> saveProfile({role:e.target.value.trim()}).then(renderAll));
+$("#settings-about").addEventListener("change", (e)=> saveProfile({about:e.target.value.trim()}).then(renderAll));
+$("#settings-avatar-input").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  try{
+    const dataUrl = await resizeImageToDataUrl(file, 200);
+    await saveProfile({avatar: dataUrl});
+    renderAll();
+  }catch(err){
+    console.warn("avatar resize failed", err);
+    showToast("Couldn't read that photo.", "error");
+  }
+});
+$("#settings-avatar-remove").addEventListener("click", async ()=>{
+  await saveProfile({avatar:null});
+  renderAll();
+});
 $("#settings-voice").addEventListener("change", (e)=> saveProfile({voiceURI:e.target.value}));
 $("#settings-rate").addEventListener("input", (e)=> saveProfile({rate:Number(e.target.value)}));
 $("#settings-pitch").addEventListener("input", (e)=> saveProfile({pitch:Number(e.target.value)}));

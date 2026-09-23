@@ -154,6 +154,34 @@ button{cursor:pointer; background:none; border:none;}
 .stack{ display:flex; flex-direction:column; gap:10px; }
 .empty-state{ padding:26px 14px; text-align:center; color:var(--text-faint); font-size:13.5px; border:1px dashed var(--border); border-radius:var(--radius-m); }
 
+/* ============================= PROFILE / AVATAR ============================= */
+.avatar{
+  width:44px; height:44px; border-radius:50%; flex-shrink:0; overflow:hidden;
+  background:var(--accent); color:var(--accent-ink);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-d); font-weight:600; font-size:17px;
+  background-size:cover; background-position:center;
+}
+.avatar-lg{ width:64px; height:64px; font-size:24px; }
+.profile-card{
+  display:flex; align-items:center; gap:14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:20px;
+}
+.profile-card .avatar{ width:52px; height:52px; font-size:19px; }
+.profile-name{ font-family:var(--font-d); font-weight:600; font-size:17px; color:var(--text); }
+.profile-role{ font-size:12.5px; color:var(--accent); font-weight:600; margin-top:1px; }
+.profile-about{ font-size:12.5px; color:var(--text-dim); margin-top:4px; line-height:1.45; }
+
+/* ============================= STAT GRID ============================= */
+.stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:22px; }
+@media (min-width:520px){ .stat-grid{ grid-template-columns:repeat(4,1fr); } }
+.stat-tile{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
+.stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
+.stat-label{ font-size:11px; color:var(--text-faint); margin-top:3px; line-height:1.35; }
+
+.event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
+.event-group-label:first-child{ margin-top:0; }
+
 .today-row{ display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
 .today-row:last-child{ border-bottom:none; }
 .today-row .label{ color:var(--text-faint); font-family:var(--font-b); font-size:13px; padding-top:2px; }
@@ -329,7 +357,11 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
     <!-- DASHBOARD -->
     <section id="screen-dashboard" class="screen">
       <h1 class="screen-title">Dashboard</h1>
+      <div id="dash-profile" class="profile-card hidden"></div>
+      <div id="dash-stats" class="stat-grid"></div>
       <div class="card" id="today-card"></div>
+      <h2 class="section-heading">Today's classes</h2>
+      <div id="today-classes-list" class="stack"></div>
       <h2 class="section-heading">Learning progress</h2>
       <div id="progress-list" class="stack"></div>
       <h2 class="section-heading">Coming up</h2>
@@ -370,9 +402,26 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
     <section id="screen-settings" class="screen">
       <h1 class="screen-title">Settings</h1>
 
+      <div class="field-group" style="display:flex; align-items:center; gap:16px;">
+        <div id="settings-avatar-preview" class="avatar avatar-lg"></div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label for="settings-avatar-input" class="btn-small ghost" style="cursor:pointer;">Change photo</label>
+          <input id="settings-avatar-input" type="file" accept="image/*" class="hidden">
+          <button id="settings-avatar-remove" class="link-row" style="margin:0; text-align:left; color:var(--text-faint);">Remove photo</button>
+        </div>
+      </div>
+
       <div class="field-group">
         <label class="field-label">Your name</label>
         <input id="settings-name" class="text-field" type="text" placeholder="Your name">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Role / title</label>
+        <input id="settings-role" class="text-field" type="text" placeholder="e.g. Computing Teacher">
+      </div>
+      <div class="field-group">
+        <label class="field-label">About</label>
+        <textarea id="settings-about" class="text-field" rows="2" style="resize:vertical; font-family:inherit;" placeholder="A line about you — shown on your Dashboard"></textarea>
       </div>
 
       <h2 class="section-heading">AI connection — standalone edition</h2>
@@ -511,7 +560,7 @@ const DAY_LABELS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday
 
 const state = {
   ready:false,
-  profile: { name:"", onboarded:false, theme:"dark", voiceOut:true, convoMode:false, voiceURI:null, rate:1, pitch:1 },
+  profile: { name:"", onboarded:false, theme:"dark", voiceOut:true, convoMode:false, voiceURI:null, rate:1, pitch:1, avatar:null, role:"", about:"" },
   projects: [],
   tasks: [],
   timetable: [],
@@ -572,6 +621,7 @@ function loadPersisted(){
     provider:"gemini",
     geminiKey:"", geminiModel:"gemini-flash-latest",
     apiKey:"", model:"claude-sonnet-5",
+    avatar:null, role:"", about:"",
   }, saved.profile||{});
   state.projects = saved.projects || [];
   state.tasks = saved.tasks || [];
@@ -641,6 +691,32 @@ $$(".nav-btn").forEach(b=> b.addEventListener("click", ()=>goScreen(b.dataset.sc
 function todaysEntries(){
   const idx = todayIdx();
   return state.timetable.filter(e=>e.day===idx).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+}
+
+// ── WORK-DAY / TEACHING-LOAD STATS (Dashboard) ──
+const WORK_START_MIN = 9*60, WORK_END_MIN = 17*60;
+function overlapMinutes(startMin, endMin, winStart, winEnd){
+  return Math.max(0, Math.min(endMin, winEnd) - Math.max(startMin, winStart));
+}
+function computeTeachingStats(){
+  const today = todaysEntries();
+  let teachingTodayMin = 0;
+  today.forEach(e=> teachingTodayMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  let teachingWeekMin = 0;
+  state.timetable.forEach(e=> teachingWeekMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  const freeTodayMin = Math.max(0, (WORK_END_MIN-WORK_START_MIN) - teachingTodayMin);
+  return {
+    workDayMin: WORK_END_MIN-WORK_START_MIN,
+    teachingTodayMin, teachingTodayCount: today.length,
+    freeTodayMin, teachingWeekMin,
+  };
+}
+
+function ttRowHtml(e){
+  return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
+}
+function wireTtRowDeletes(root){
+  $$('[data-tt]', root).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
 }
 
 function computeStatus(){
@@ -750,6 +826,29 @@ function renderSuggestion(){
    RENDERING — DASHBOARD
    ============================================================ */
 function renderDashboard(){
+  const profileCard = $("#dash-profile");
+  const hasProfileInfo = state.profile.avatar || state.profile.role || state.profile.about;
+  profileCard.classList.toggle("hidden", !hasProfileInfo);
+  if(hasProfileInfo){
+    const initial = (state.profile.name||"?").trim().charAt(0).toUpperCase() || "?";
+    const avatarHtml = state.profile.avatar
+      ? '<div class="avatar" style="background-image:url(\''+state.profile.avatar+'\')"></div>'
+      : '<div class="avatar">'+esc(initial)+'</div>';
+    profileCard.innerHTML = avatarHtml
+      + '<div><div class="profile-name">'+esc(state.profile.name||"")+'</div>'
+      + (state.profile.role?'<div class="profile-role">'+esc(state.profile.role)+'</div>':'')
+      + (state.profile.about?'<div class="profile-about">'+esc(state.profile.about)+'</div>':'')
+      + '</div>';
+  }
+
+  const stats = computeTeachingStats();
+  $("#dash-stats").innerHTML = [
+    ["Work day", fmtMinutes(stats.workDayMin), "9:00 – 17:00"],
+    ["Teaching today", stats.teachingTodayCount+(stats.teachingTodayCount===1?" class":" classes"), fmtMinutes(stats.teachingTodayMin)],
+    ["Free today", fmtMinutes(stats.freeTodayMin), "within 9:00 – 17:00"],
+    ["Teaching this week", fmtMinutes(stats.teachingWeekMin), "across all days"],
+  ].map(([label,val,sub])=> '<div class="stat-tile"><div class="stat-value">'+esc(val)+'</div><div class="stat-label">'+esc(label)+' · '+esc(sub)+'</div></div>').join("");
+
   const st = computeStatus();
   const entries = todaysEntries();
   let html = "";
@@ -765,6 +864,10 @@ function renderDashboard(){
   $("#today-card").innerHTML = html || row("Today","Nothing scheduled");
 
   function row(l,v){ return '<div class="today-row"><span class="label">'+esc(l)+'</span><span class="val">'+v+'</span></div>'; }
+
+  const classesList = $("#today-classes-list");
+  classesList.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes today.</div>';
+  wireTtRowDeletes(classesList);
 
   const activeProjects = state.projects.filter(p=>!p.archived);
   $("#progress-list").innerHTML = activeProjects.length ? activeProjects.map(p=>{
@@ -787,14 +890,22 @@ function renderDashboard(){
 }
 
 function renderUpcomingEvents(sel){
-  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,6);
+  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,20);
   const target = $(sel);
   if(!target) return;
-  target.innerHTML = upcoming.length ? upcoming.map(e=>{
+  if(!upcoming.length){ target.innerHTML = '<div class="empty-state">No upcoming events.</div>'; return; }
+
+  function eventRow(e){
     const dleft = daysUntil(e.date);
     const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
     return '<div class="event-row"><div><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div><div class="event-badge">'+esc(when)+'</div></div>';
-  }).join("") : '<div class="empty-state">No upcoming events.</div>';
+  }
+  const work = upcoming.filter(e=> (e.category||"work")==="work");
+  const personal = upcoming.filter(e=> e.category==="personal");
+  let html = "";
+  if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(eventRow).join("");
+  if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(eventRow).join("");
+  target.innerHTML = html;
 }
 
 /* ============================================================
@@ -886,10 +997,8 @@ function renderTimetable(){
 
   const entries = state.timetable.filter(e=>e.day===state.selectedDay).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
   const list = $("#timetable-list");
-  list.innerHTML = entries.length ? entries.map(e=>{
-    return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
-  }).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
-  $$('[data-tt]', list).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
+  list.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
+  wireTtRowDeletes(list);
 
   renderUpcomingEvents("#events-list-2");
 }
@@ -920,6 +1029,13 @@ if("speechSynthesis" in window){
 
 function renderSettingsFields(){
   $("#settings-name").value = state.profile.name || "";
+  $("#settings-role").value = state.profile.role || "";
+  $("#settings-about").value = state.profile.about || "";
+  const avatarPreview = $("#settings-avatar-preview");
+  const initial = (state.profile.name||"?").trim().charAt(0).toUpperCase() || "?";
+  avatarPreview.style.backgroundImage = state.profile.avatar ? "url('"+state.profile.avatar+"')" : "";
+  avatarPreview.textContent = state.profile.avatar ? "" : initial;
+  $("#settings-avatar-remove").classList.toggle("hidden", !state.profile.avatar);
   $("#settings-rate").value = state.profile.rate ?? 1;
   $("#settings-pitch").value = state.profile.pitch ?? 1;
   $("#settings-provider").value = state.profile.provider || "gemini";
@@ -1087,9 +1203,10 @@ function openEventModal(){
   openFormModal("Add event", [
     {name:"title", label:"Event", placeholder:"e.g. Presentation"},
     {name:"date", label:"Date", type:"date"},
+    {name:"category", label:"Category", type:"select", options:[["work","Work"],["personal","Personal"]]},
   ], async (data)=>{
     if(!data.title || !data.date) return;
-    await dbAdd("events", {title:data.title, date:data.date, prepped:false});
+    await dbAdd("events", {title:data.title, date:data.date, category:data.category==="personal"?"personal":"work", prepped:false});
     showToast("Event added");
   }, "Add");
 }
@@ -1234,6 +1351,30 @@ function fileToBase64(file){
     r.onload = ()=> resolve(String(r.result).split(",")[1]);
     r.onerror = reject;
     r.readAsDataURL(file);
+  });
+}
+
+// Crops to a centered square and downsizes before storing, so a phone photo
+// doesn't blow through localStorage's ~5MB per-origin quota.
+function resizeImageToDataUrl(file, size){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=> reject(new Error("read failed"));
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onerror = ()=> reject(new Error("decode failed"));
+      img.onload = ()=>{
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width-side)/2, sy = (img.height-side)/2;
+        const canvas = document.createElement("canvas");
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
   });
 }
 
@@ -1507,7 +1648,7 @@ function liveBuildTools(){
       { name:"add_project", description:"Add a new project or course.",
         parameters:{ type:"OBJECT", properties:{ name:{type:"STRING"}, kind:{type:"STRING", description:"'project' or 'course'"} }, required:["name"] } },
       { name:"add_event", description:"Add a dated event or important date, such as an inspection or deadline.",
-        parameters:{ type:"OBJECT", properties:{ title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD — resolve relative dates from the date reference table, never calculate it yourself"} }, required:["title","date"] } },
+        parameters:{ type:"OBJECT", properties:{ title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD — resolve relative dates from the date reference table, never calculate it yourself"}, category:{type:"STRING", description:"'work' or 'personal' — default to 'work' unless clearly personal"} }, required:["title","date"] } },
       { name:"delete_event", description:"Remove an existing event, by its id.",
         parameters:{ type:"OBJECT", properties:{ eventId:{type:"STRING"} }, required:["eventId"] } },
       { name:"update_event", description:"Change an existing event's title and/or date, by its id. Only include fields that changed.",
@@ -1530,7 +1671,7 @@ Voice personality: natural, intelligent, warm, calm, professional, slightly futu
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 When she asks you to complete a task, start a focus session, or log/note a progress update, actually call the matching function right away — don't just say you will.
 IMPORTANT — confirm before acting: for add_task, add_project, add_event, delete_event, update_event, delete_class and update_class, do NOT call the function the first time it comes up. Say back exactly what you're about to do as a short question (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and wait — call nothing yet. Only call the function once she has clearly said yes / go ahead / do it / correct in reply to that question. If she says no or changes her mind, don't call anything. This matters a lot for voice: a brief pause while she's still talking can look like she's finished, so never create, delete or change something without her explicit spoken "yes" first, and never ask the same thing twice in a row.
-When she mentions a date or event, resolve it using the date reference table below, propose it, and once confirmed call add_event with the exact ISO date.
+When she mentions a date or event, resolve it using the date reference table below, propose it, and once confirmed call add_event with the exact ISO date and a category ("work" unless it's clearly personal).
 When she asks to remove or change an existing event or timetable class, use its id from the state below and, once confirmed, call delete_event/update_event or delete_class/update_class. Copy each id exactly as shown between the square brackets, without the brackets themselves.
 
 CURRENT STATE:
@@ -1893,12 +2034,12 @@ Replies must be 1 to 4 short sentences unless she explicitly asks for more detai
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id). Copy each id exactly as shown between the square brackets, but do NOT include the brackets themselves in the id field.
 IMPORTANT — confirm before acting: for add_task, add_project, add_event, delete_event, update_event, delete_class and update_class, do NOT put the action in your actions list the first time it comes up. Instead reply with a short spoken confirmation of exactly what you're about to do (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and reply with an EMPTY actions array. Only include the action in actions on a LATER turn, once Tahira has clearly confirmed with something like "yes", "go ahead", "do it" or "correct" in her most recent message. If she says no or changes her mind, don't act — ask what she'd like instead. Never propose and act in the same turn. If her most recent message already reads as an unambiguous confirmation of something you just proposed (in "Recent conversation" below), go ahead and include the action now.
-When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — propose add_event (following the confirm-before-acting rule above), and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself.
+When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — propose add_event (following the confirm-before-acting rule above), and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself. Set category to "personal" only when it's clearly personal (a doctor's appointment, a family thing, etc.) — default to "work" for anything school-related or ambiguous.
 When Tahira asks to remove, cancel or delete an event, propose delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, propose update_event.
 When Tahira asks to remove, cancel or delete a class from her timetable, propose delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, propose update_class, only including the fields that changed.
 When Tahira shares a status update, progress, or something that happened on a specific project or course ("I finished the literature review", "the Y11 mock is done", "struggled with the API today") — use log_update right away (no confirmation needed for this one) with that project's id from the Projects list above. If it clearly isn't tied to any listed project, use log_update with projectId null, or memory if it's more of a standing fact/preference than a one-off update.
 Reply with ONLY a JSON object, no other text, shaped exactly as:
-{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
+{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD","category":"work|personal"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
 Use an empty actions array when no action is needed. Only include a memory fact for standing facts/preferences (not one-off updates, which belong in log_update, and not dated events, which belong in add_event).`;
 
 async function callJagu(userText){
@@ -1961,7 +2102,7 @@ async function applyActions(actions){
           if(dupEvent){
             results.push({type:a.type, ok:true, reason:"duplicate — already on the events list, skipped"});
           } else {
-            await dbAdd("events", {title:a.title, date:a.date, prepped:false});
+            await dbAdd("events", {title:a.title, date:a.date, category:a.category==="personal"?"personal":"work", prepped:false});
             results.push({type:a.type, ok:true});
           }
         } else {
@@ -2053,7 +2194,26 @@ $("#onboarding-start").addEventListener("click", async ()=>{
 /* ============================================================
    SETTINGS WIRING
    ============================================================ */
-$("#settings-name").addEventListener("change", (e)=> saveProfile({name:e.target.value.trim()}));
+$("#settings-name").addEventListener("change", (e)=> saveProfile({name:e.target.value.trim()}).then(renderAll));
+$("#settings-role").addEventListener("change", (e)=> saveProfile({role:e.target.value.trim()}).then(renderAll));
+$("#settings-about").addEventListener("change", (e)=> saveProfile({about:e.target.value.trim()}).then(renderAll));
+$("#settings-avatar-input").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  try{
+    const dataUrl = await resizeImageToDataUrl(file, 200);
+    await saveProfile({avatar: dataUrl});
+    renderAll();
+  }catch(err){
+    console.warn("avatar resize failed", err);
+    showToast("Couldn't read that photo.", "error");
+  }
+});
+$("#settings-avatar-remove").addEventListener("click", async ()=>{
+  await saveProfile({avatar:null});
+  renderAll();
+});
 $("#settings-voice").addEventListener("change", (e)=> saveProfile({voiceURI:e.target.value}));
 $("#settings-rate").addEventListener("input", (e)=> saveProfile({rate:Number(e.target.value)}));
 $("#settings-pitch").addEventListener("input", (e)=> saveProfile({pitch:Number(e.target.value)}));

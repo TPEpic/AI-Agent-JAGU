@@ -68,7 +68,11 @@
     <!-- DASHBOARD -->
     <section id="screen-dashboard" class="screen">
       <h1 class="screen-title">Dashboard</h1>
+      <div id="dash-profile" class="profile-card hidden"></div>
+      <div id="dash-stats" class="stat-grid"></div>
       <div class="card" id="today-card"></div>
+      <h2 class="section-heading">Today's classes</h2>
+      <div id="today-classes-list" class="stack"></div>
       <h2 class="section-heading">Learning progress</h2>
       <div id="progress-list" class="stack"></div>
       <h2 class="section-heading">Coming up</h2>
@@ -109,9 +113,26 @@
     <section id="screen-settings" class="screen">
       <h1 class="screen-title">Settings</h1>
 
+      <div class="field-group" style="display:flex; align-items:center; gap:16px;">
+        <div id="settings-avatar-preview" class="avatar avatar-lg"></div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label for="settings-avatar-input" class="btn-small ghost" style="cursor:pointer;">Change photo</label>
+          <input id="settings-avatar-input" type="file" accept="image/*" class="hidden">
+          <button id="settings-avatar-remove" class="link-row" style="margin:0; text-align:left; color:var(--text-faint);">Remove photo</button>
+        </div>
+      </div>
+
       <div class="field-group">
         <label class="field-label">Your name</label>
         <input id="settings-name" class="text-field" type="text" placeholder="Your name">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Role / title</label>
+        <input id="settings-role" class="text-field" type="text" placeholder="e.g. Computing Teacher">
+      </div>
+      <div class="field-group">
+        <label class="field-label">About</label>
+        <textarea id="settings-about" class="text-field" rows="2" style="resize:vertical; font-family:inherit;" placeholder="A line about you — shown on your Dashboard"></textarea>
       </div>
 
       <h2 class="section-heading">AI connection — standalone edition</h2>

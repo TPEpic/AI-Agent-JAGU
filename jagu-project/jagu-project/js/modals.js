@@ -113,9 +113,10 @@ function openEventModal(){
   openFormModal("Add event", [
     {name:"title", label:"Event", placeholder:"e.g. Presentation"},
     {name:"date", label:"Date", type:"date"},
+    {name:"category", label:"Category", type:"select", options:[["work","Work"],["personal","Personal"]]},
   ], async (data)=>{
     if(!data.title || !data.date) return;
-    await dbAdd("events", {title:data.title, date:data.date, prepped:false});
+    await dbAdd("events", {title:data.title, date:data.date, category:data.category==="personal"?"personal":"work", prepped:false});
     showToast("Event added");
   }, "Add");
 }
