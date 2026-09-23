@@ -35,7 +35,7 @@ function liveBuildTools(){
       { name:"add_project", description:"Add a new project or course.",
         parameters:{ type:"OBJECT", properties:{ name:{type:"STRING"}, kind:{type:"STRING", description:"'project' or 'course'"} }, required:["name"] } },
       { name:"add_event", description:"Add a dated event or important date, such as an inspection or deadline.",
-        parameters:{ type:"OBJECT", properties:{ title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD — resolve relative dates from the date reference table, never calculate it yourself"} }, required:["title","date"] } },
+        parameters:{ type:"OBJECT", properties:{ title:{type:"STRING"}, date:{type:"STRING", description:"ISO date YYYY-MM-DD — resolve relative dates from the date reference table, never calculate it yourself"}, category:{type:"STRING", description:"'work' or 'personal' — default to 'work' unless clearly personal"} }, required:["title","date"] } },
       { name:"delete_event", description:"Remove an existing event, by its id.",
         parameters:{ type:"OBJECT", properties:{ eventId:{type:"STRING"} }, required:["eventId"] } },
       { name:"update_event", description:"Change an existing event's title and/or date, by its id. Only include fields that changed.",
@@ -58,7 +58,7 @@ Voice personality: natural, intelligent, warm, calm, professional, slightly futu
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 When she asks you to complete a task, start a focus session, or log/note a progress update, actually call the matching function right away — don't just say you will.
 IMPORTANT — confirm before acting: for add_task, add_project, add_event, delete_event, update_event, delete_class and update_class, do NOT call the function the first time it comes up. Say back exactly what you're about to do as a short question (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and wait — call nothing yet. Only call the function once she has clearly said yes / go ahead / do it / correct in reply to that question. If she says no or changes her mind, don't call anything. This matters a lot for voice: a brief pause while she's still talking can look like she's finished, so never create, delete or change something without her explicit spoken "yes" first, and never ask the same thing twice in a row.
-When she mentions a date or event, resolve it using the date reference table below, propose it, and once confirmed call add_event with the exact ISO date.
+When she mentions a date or event, resolve it using the date reference table below, propose it, and once confirmed call add_event with the exact ISO date and a category ("work" unless it's clearly personal).
 When she asks to remove or change an existing event or timetable class, use its id from the state below and, once confirmed, call delete_event/update_event or delete_class/update_class. Copy each id exactly as shown between the square brackets, without the brackets themselves.
 
 CURRENT STATE:

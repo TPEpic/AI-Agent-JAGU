@@ -8,7 +8,7 @@ export const DAY_LABELS = ["Monday","Tuesday","Wednesday","Thursday","Friday","S
 
 export const state = {
   ready:false,
-  profile: { name:"", onboarded:false, theme:"dark", voiceOut:true, convoMode:false, voiceURI:null, rate:1, pitch:1 },
+  profile: { name:"", onboarded:false, theme:"dark", voiceOut:true, convoMode:false, voiceURI:null, rate:1, pitch:1, avatar:null, role:"", about:"" },
   projects: [],
   tasks: [],
   timetable: [],
@@ -41,6 +41,7 @@ export function loadPersisted(){
     provider:"gemini",
     geminiKey:"", geminiModel:"gemini-flash-latest",
     apiKey:"", model:"claude-sonnet-5",
+    avatar:null, role:"", about:"",
   }, saved.profile||{});
   state.projects = saved.projects || [];
   state.tasks = saved.tasks || [];
