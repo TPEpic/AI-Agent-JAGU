@@ -1,6 +1,6 @@
-import { $, $$, daysUntil, esc, fmtMinutes, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
+import { $, $$, daysUntil, esc, fmtMinutes, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete, dbUpdate, persist, state } from './state.js';
-import { openFormModal, openTaskModal } from './modals.js';
+import { openClassNotesModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 
 // ── NAVIGATION ──
@@ -39,10 +39,15 @@ function computeTeachingStats(){
 }
 
 function ttRowHtml(e){
-  return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')+'</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
+  const hasNotes = !!(e.notes && e.notes.trim());
+  return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
+    + (hasNotes?'<div class="tt-note">'+esc(e.notes)+'</div>':'')
+    + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin-top:6px;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
+    + '</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
 }
 function wireTtRowDeletes(root){
   $$('[data-tt]', root).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
+  $$('[data-tt-note]', root).forEach(el=> el.addEventListener("click", ()=> openClassNotesModal(el.dataset.ttNote)));
 }
 
 export function computeStatus(){
@@ -64,6 +69,16 @@ export function greetingWord(){
   if(h<12) return "Good morning";
   if(h<17) return "Good afternoon";
   return "Good evening";
+}
+
+// Looks up which entry in state.termDates today falls inside (if any) and
+// the next one coming up, so the app can say things like "12 days to half-term".
+export function currentTermInfo(){
+  const todayStr = todayISO();
+  const sorted = state.termDates.slice().sort((a,b)=> a.start.localeCompare(b.start));
+  const current = sorted.find(t=> t.start<=todayStr && todayStr<=t.end);
+  const next = sorted.find(t=> t.start>todayStr);
+  return { current, next };
 }
 
 function updateClock(){
@@ -100,6 +115,22 @@ function renderHomeStatus(){
     line = "Free for the rest of the day.";
   }
   $("#status-line").textContent = line;
+
+  const term = currentTermInfo();
+  const termLine = $("#term-line");
+  if(termLine){
+    if(term.current){
+      let txt = term.current.name;
+      if(term.next) txt += " · "+daysUntil(term.next.start)+" day(s) to "+term.next.name;
+      termLine.textContent = txt;
+      termLine.classList.remove("hidden");
+    } else if(term.next){
+      termLine.textContent = (term.next.type==="holiday"?"On teaching break":"Between terms")+" · "+term.next.name+" starts in "+daysUntil(term.next.start)+" day(s)";
+      termLine.classList.remove("hidden");
+    } else {
+      termLine.classList.add("hidden");
+    }
+  }
 }
 
 function pendingTasksFor(projectId){
@@ -174,12 +205,16 @@ function renderDashboard(){
   }
 
   const stats = computeTeachingStats();
-  $("#dash-stats").innerHTML = [
+  const statTiles = [
     ["Work day", fmtMinutes(stats.workDayMin), "9:00 – 17:00"],
     ["Teaching today", stats.teachingTodayCount+(stats.teachingTodayCount===1?" class":" classes"), fmtMinutes(stats.teachingTodayMin)],
     ["Free today", fmtMinutes(stats.freeTodayMin), "within 9:00 – 17:00"],
     ["Teaching this week", fmtMinutes(stats.teachingWeekMin), "across all days"],
-  ].map(([label,val,sub])=> '<div class="stat-tile"><div class="stat-value">'+esc(val)+'</div><div class="stat-label">'+esc(label)+' · '+esc(sub)+'</div></div>').join("");
+  ];
+  const term = currentTermInfo();
+  if(term.current) statTiles.push(["Current term", term.current.name, term.next? daysUntil(term.next.start)+" day(s) to "+term.next.name : "no upcoming break set"]);
+  else if(term.next) statTiles.push(["Term status", "On break", term.next.name+" in "+daysUntil(term.next.start)+" day(s)"]);
+  $("#dash-stats").innerHTML = statTiles.map(([label,val,sub])=> '<div class="stat-tile"><div class="stat-value">'+esc(val)+'</div><div class="stat-label">'+esc(label)+' · '+esc(sub)+'</div></div>').join("");
 
   const st = computeStatus();
   const entries = todaysEntries();
@@ -200,6 +235,8 @@ function renderDashboard(){
   const classesList = $("#today-classes-list");
   classesList.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes today.</div>';
   wireTtRowDeletes(classesList);
+
+  renderMarking("#marking-list");
 
   const activeProjects = state.projects.filter(p=>!p.archived);
   $("#progress-list").innerHTML = activeProjects.length ? activeProjects.map(p=>{
@@ -239,6 +276,52 @@ function renderTodoList(sel){
   if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(todoRow).join("");
   if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(todoRow).join("");
   target.innerHTML = html;
+}
+
+function markingRowHtml(m){
+  const done = (m.marked||0) >= m.total;
+  const pct = m.total>0 ? Math.round(Math.min(1, (m.marked||0)/m.total)*100) : 0;
+  let due = "";
+  if(m.dueDate){
+    const d = daysUntil(m.dueDate);
+    due = d===0 ? "Due today" : d<0 ? "Overdue" : "Due in "+d+" day(s)";
+  }
+  return '<div class="card marking-row">'
+    + '<div class="proj-top"><div><div class="proj-name">'+esc(m.assignment)+'</div><div class="proj-kind">'+esc(m.className)+(due?" · "+due:"")+'</div></div><div class="proj-pct">'+(done?"Done":(m.marked||0)+"/"+m.total)+'</div></div>'
+    + (!done ? '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' : '')
+    + '<div class="row-gap" style="justify-content:flex-start; margin-top:12px;">'
+      + (!done ? '<button class="btn-small" data-mark-inc="'+m.id+'">+1 marked</button>' : '')
+      + '<button class="btn-small ghost" data-mark-done="'+m.id+'">'+(done?"Reopen":"Mark all done")+'</button>'
+      + '<button class="btn-small ghost" data-mark-del="'+m.id+'" style="color:var(--danger); border-color:var(--danger);">Delete</button>'
+    + '</div></div>';
+}
+function renderMarking(sel){
+  const target = $(sel);
+  if(!target) return;
+  const items = state.marking.slice().sort((a,b)=>{
+    const aDone = (a.marked||0)>=a.total, bDone = (b.marked||0)>=b.total;
+    if(aDone!==bDone) return aDone?1:-1;
+    const ad = a.dueDate?daysUntil(a.dueDate):9999, bd = b.dueDate?daysUntil(b.dueDate):9999;
+    return ad-bd;
+  });
+  if(!items.length){ target.innerHTML = '<div class="empty-state">Nothing to mark right now.</div>'; return; }
+  target.innerHTML = items.map(markingRowHtml).join("");
+  $$('[data-mark-inc]', target).forEach(el=> el.addEventListener("click", ()=> incMarking(el.dataset.markInc)));
+  $$('[data-mark-done]', target).forEach(el=> el.addEventListener("click", ()=> toggleMarkingDone(el.dataset.markDone)));
+  $$('[data-mark-del]', target).forEach(el=> el.addEventListener("click", ()=> deleteMarking(el.dataset.markDel)));
+}
+async function incMarking(id){
+  const m = state.marking.find(x=>x.id===id); if(!m) return;
+  await dbUpdate("marking", id, {marked: Math.min(m.total, (m.marked||0)+1)});
+}
+async function toggleMarkingDone(id){
+  const m = state.marking.find(x=>x.id===id); if(!m) return;
+  const done = (m.marked||0) >= m.total;
+  await dbUpdate("marking", id, {marked: done?0:m.total});
+}
+async function deleteMarking(id){
+  if(!confirm("Delete this marking batch?")) return;
+  await dbDelete("marking", id);
 }
 
 function renderUpcomingEvents(sel){
@@ -404,6 +487,18 @@ export function renderSettingsFields(){
   $("#toggle-convo-mode").classList.toggle("on", !!state.profile.convoMode);
   $("#mute-btn").classList.toggle("muted", !state.profile.voiceOut);
   if(voicesLoaded) populateVoices();
+  renderTermDatesList();
+}
+
+function termRowHtml(t){
+  return '<div class="event-row"><div><div class="event-title">'+esc(t.name)+'</div><div class="event-when">'+esc(t.start)+' – '+esc(t.end)+' · '+(t.type==="holiday"?"Holiday":"Term")+'</div></div><span class="task-del" data-term-del="'+t.id+'">✕</span></div>';
+}
+function renderTermDatesList(){
+  const target = $("#term-dates-list");
+  if(!target) return;
+  const sorted = state.termDates.slice().sort((a,b)=> a.start.localeCompare(b.start));
+  target.innerHTML = sorted.length ? sorted.map(termRowHtml).join("") : '<div class="empty-state">No term dates added yet.</div>';
+  $$('[data-term-del]', target).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this?")) await dbDelete("termDates", el.dataset.termDel); }));
 }
 
 export function refreshAiStatusDot(){

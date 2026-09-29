@@ -41,6 +41,7 @@
       <div class="greeting">
         <h1 id="greeting-text">Hello</h1>
         <p id="status-line" class="status-line">Loading your day…</p>
+        <p id="term-line" class="status-line term-line hidden"></p>
       </div>
 
       <div class="orb-wrap">
@@ -73,6 +74,11 @@
       <div class="card" id="today-card"></div>
       <h2 class="section-heading">Today's classes</h2>
       <div id="today-classes-list" class="stack"></div>
+      <div class="screen-title-row" style="margin:26px 0 12px;">
+        <h2 class="section-heading" style="margin:0;">Marking queue</h2>
+        <button id="add-marking-btn" class="btn-small">+ Add</button>
+      </div>
+      <div id="marking-list" class="stack"></div>
       <h2 class="section-heading">Learning progress</h2>
       <div id="progress-list" class="stack"></div>
       <h2 class="section-heading">To-do</h2>
@@ -201,6 +207,11 @@
         <button id="diag-refresh" class="btn-small ghost">Re-check</button>
         <button id="diag-copy" class="btn-small ghost">Copy diagnostics</button>
       </div>
+
+      <h2 class="section-heading">Term dates</h2>
+      <p style="color:var(--text-faint); font-size:12px; margin:-6px 0 12px; line-height:1.5;">Add your college's term and holiday dates once at the start of the year — JAGU uses these to know what part of the year it is.</p>
+      <div id="term-dates-list" class="stack" style="margin-bottom:12px;"></div>
+      <button id="add-term-btn" class="btn-small ghost">+ Add term/holiday</button>
 
       <h2 class="section-heading">Data</h2>
       <button id="export-btn" class="btn-full ghost" style="margin-bottom:10px;">Export backup</button>

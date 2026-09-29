@@ -1,5 +1,5 @@
 import { $, esc, showToast } from './helpers.js';
-import { DAY_LABELS, dbAdd, dbDelete, state } from './state.js';
+import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 
 // ── GENERIC FORM MODAL ──
 export function openFormModal(title, fields, onSubmit, submitLabel){
@@ -7,6 +7,9 @@ export function openFormModal(title, fields, onSubmit, submitLabel){
   const fieldsHtml = fields.map(f=>{
     if(f.type==="select"){
       return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><select class="text-field" name="'+f.name+'">'+f.options.map(o=>'<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>').join("")+'</select></div>';
+    }
+    if(f.type==="textarea"){
+      return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><textarea class="text-field" name="'+f.name+'" rows="'+(f.rows||3)+'" style="resize:vertical; font-family:inherit;" '+(f.placeholder?'placeholder="'+esc(f.placeholder)+'"':'')+'>'+(f.value!=null?esc(f.value):'')+'</textarea></div>';
     }
     return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><input class="text-field" name="'+f.name+'" type="'+(f.type||"text")+'" '+(f.value!=null?'value="'+esc(f.value)+'"':'')+' '+(f.placeholder?'placeholder="'+esc(f.placeholder)+'"':'')+'></div>';
   }).join("");
@@ -58,11 +61,23 @@ function openTimetableModal(){
     {name:"end", label:"End time", type:"time"},
     {name:"subject", label:"Subject", placeholder:"e.g. T Level Computing"},
     {name:"room", label:"Room (optional)", placeholder:"e.g. B105"},
+    {name:"notes", label:"Notes (optional)", type:"textarea", placeholder:"e.g. Bring USB, unit 2 resources link, room may change..."},
   ], async (data)=>{
     if(!data.subject || !data.start || !data.end) return;
-    await dbAdd("timetable", {day:Number(data.day), start:data.start, end:data.end, subject:data.subject, room:data.room||null});
+    await dbAdd("timetable", {day:Number(data.day), start:data.start, end:data.end, subject:data.subject, room:data.room||null, notes:data.notes||null});
     showToast("Class added");
   }, "Add");
+}
+
+export function openClassNotesModal(classId){
+  const cls = state.timetable.find(c=>c.id===classId);
+  if(!cls) return;
+  openFormModal("Notes — "+cls.subject, [
+    {name:"notes", label:"Notes", type:"textarea", rows:5, value:cls.notes||"", placeholder:"e.g. Bring USB, unit 2 resources link, room may change..."},
+  ], async (data)=>{
+    await dbUpdate("timetable", classId, {notes:data.notes||null});
+    showToast("Note saved");
+  }, "Save");
 }
 
 const TIMETABLE_IMPORT_PLACEHOLDER = [
@@ -125,8 +140,36 @@ function openEventModal(){
   }, "Add");
 }
 
+function openMarkingModal(){
+  openFormModal("New marking batch", [
+    {name:"className", label:"Class / group", placeholder:"e.g. Y11 T Level DSS"},
+    {name:"assignment", label:"Assignment", placeholder:"e.g. Unit 3 coursework"},
+    {name:"total", label:"Number of scripts", type:"number", value:1},
+    {name:"dueDate", label:"Due date (optional)", type:"date"},
+  ], async (data)=>{
+    if(!data.className || !data.assignment) return;
+    await dbAdd("marking", {className:data.className, assignment:data.assignment, total:Math.max(1, Number(data.total)||1), marked:0, dueDate:data.dueDate||null});
+    showToast("Added to marking queue");
+  }, "Add");
+}
+
+function openTermModal(){
+  openFormModal("Add term or holiday", [
+    {name:"name", label:"Name", placeholder:"e.g. Autumn Term or October half-term"},
+    {name:"type", label:"Type", type:"select", options:[["term","Term (teaching)"],["holiday","Holiday / half-term"]]},
+    {name:"start", label:"Start date", type:"date"},
+    {name:"end", label:"End date", type:"date"},
+  ], async (data)=>{
+    if(!data.name || !data.start || !data.end) return;
+    await dbAdd("termDates", {name:data.name, type:data.type==="holiday"?"holiday":"term", start:data.start, end:data.end});
+    showToast("Added "+data.name);
+  }, "Add");
+}
+
 $("#add-project-btn").addEventListener("click", openProjectModal);
 $("#add-timetable-btn").addEventListener("click", openTimetableModal);
 $("#import-timetable-btn").addEventListener("click", openImportModal);
 $("#add-event-btn").addEventListener("click", openEventModal);
+$("#add-marking-btn").addEventListener("click", openMarkingModal);
+$("#add-term-btn").addEventListener("click", openTermModal);
 

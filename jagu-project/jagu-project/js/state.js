@@ -15,6 +15,8 @@ export const state = {
   events: [],
   memory: [],
   updates: [], // {projectId, text, createdAt} — voice/manual progress notes
+  marking: [], // {className, assignment, total, marked, dueDate, createdAt} — marking/grading queue
+  termDates: [], // {name, type:'term'|'holiday', start, end} — the academic calendar, entered once
   chatTurns: [], // {role:'user'|'assistant', text, ts}
   selectedDay: (new Date().getDay()+6)%7,
 };
@@ -28,6 +30,7 @@ export function persist(){
     profile: state.profile,
     projects: state.projects, tasks: state.tasks, timetable: state.timetable,
     events: state.events, memory: state.memory, updates: state.updates,
+    marking: state.marking, termDates: state.termDates,
     chat: state.chatTurns,
   };
   try{ localStorage.setItem(LS_KEY, JSON.stringify(toSave)); }
@@ -49,6 +52,8 @@ export function loadPersisted(){
   state.events = saved.events || [];
   state.memory = saved.memory || [];
   state.updates = saved.updates || [];
+  state.marking = saved.marking || [];
+  state.termDates = saved.termDates || [];
   state.chatTurns = saved.chat || [];
 }
 

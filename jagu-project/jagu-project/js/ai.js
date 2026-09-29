@@ -1,6 +1,6 @@
 import { $, daysUntil, esc, fmtMinutes, minToLabel, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, dbAdd, dbDelete, dbUpdate, state } from './state.js';
-import { addChatBubble, allPendingTasks, computeStatus, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
+import { addChatBubble, allPendingTasks, computeStatus, currentTermInfo, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
 import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { HAS_TTS, setOrb, speak, voiceUnlocked } from './voice.js';
@@ -250,7 +250,20 @@ export function buildContext(){
   if(state.timetable.length){
     lines.push("Timetable classes (use the id to delete or change one):");
     state.timetable.slice().sort((a,b)=> a.day-b.day || timeToMin(a.start)-timeToMin(b.start))
-      .forEach(c=> lines.push("- ["+c.id+"] "+DAY_LABELS[c.day]+" "+c.start+"–"+c.end+" "+c.subject+(c.room?" (Room "+c.room+")":"")));
+      .forEach(c=> lines.push("- ["+c.id+"] "+DAY_LABELS[c.day]+" "+c.start+"–"+c.end+" "+c.subject+(c.room?" (Room "+c.room+")":"")+(c.notes?" — note: "+c.notes:"")));
+  }
+
+  const activeMarking = state.marking.filter(m=> (m.marked||0) < m.total);
+  if(activeMarking.length){
+    lines.push("Marking still to do (use the id to log progress):");
+    activeMarking.forEach(m=> lines.push("- ["+m.id+"] "+m.assignment+" ("+m.className+"): "+(m.marked||0)+"/"+m.total+" marked"+(m.dueDate?", due "+m.dueDate+" ("+daysUntil(m.dueDate)+" day(s))":"")));
+  }
+
+  const term = currentTermInfo();
+  if(term.current){
+    lines.push("Currently in "+term.current.name+" ("+term.current.start+" to "+term.current.end+")"+(term.next?", "+daysUntil(term.next.start)+" day(s) until "+term.next.name+" starts":"")+".");
+  } else if(term.next){
+    lines.push("Currently on a break — "+term.next.name+" starts in "+daysUntil(term.next.start)+" day(s), on "+term.next.start+".");
   }
 
   if(state.memory.length){
@@ -285,15 +298,17 @@ Voice personality: natural, intelligent, warm, calm, professional, slightly futu
 Replies must be 1 to 4 short sentences unless she explicitly asks for more detail.
 Be context-aware: use the state given below rather than asking her to repeat things she has already told you.
 You may propose actions the app should take, using ONLY the ids given in the context above (never invent an id). Copy each id exactly as shown between the square brackets, but do NOT include the brackets themselves in the id field.
-IMPORTANT — confirm before acting: for add_task, add_project, add_event, delete_event, update_event, delete_class and update_class, do NOT put the action in your actions list the first time it comes up. Instead reply with a short spoken confirmation of exactly what you're about to do (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and reply with an EMPTY actions array. Only include the action in actions on a LATER turn, once Tahira has clearly confirmed with something like "yes", "go ahead", "do it" or "correct" in her most recent message. If she says no or changes her mind, don't act — ask what she'd like instead. Never propose and act in the same turn. If her most recent message already reads as an unambiguous confirmation of something you just proposed (in "Recent conversation" below), go ahead and include the action now.
+IMPORTANT — confirm before acting: for add_task, add_project, add_event, add_marking, delete_event, update_event, delete_class and update_class, do NOT put the action in your actions list the first time it comes up. Instead reply with a short spoken confirmation of exactly what you're about to do (e.g. "Add a Game Development session tomorrow afternoon — shall I add that?") and reply with an EMPTY actions array. Only include the action in actions on a LATER turn, once Tahira has clearly confirmed with something like "yes", "go ahead", "do it" or "correct" in her most recent message. If she says no or changes her mind, don't act — ask what she'd like instead. Never propose and act in the same turn. If her most recent message already reads as an unambiguous confirmation of something you just proposed (in "Recent conversation" below), go ahead and include the action now.
 Tahira keeps a strict split between WORK and PERSONAL life — every project/course, task and event is tagged one or the other in the state below. When she asks something like "what do I have to catch up on personally" or "anything going on at work", answer using ONLY the matching tagged section (PERSONAL tasks/events, or WORK tasks/events) — never mix the two or mention items from the other side unless she asks for everything.
 When Tahira mentions a date or event (an inspection, deadline, trip, appointment, "please note X is happening on Y") — including with relative wording like "next week Tuesday" — propose add_event (following the confirm-before-acting rule above), and take the ISO date ONLY from the DATE REFERENCE table below; never compute it yourself. Set category to "personal" only when it's clearly personal (a doctor's appointment, a family thing, etc.) — default to "work" for anything school-related or ambiguous.
 When Tahira asks you to add a task or a project/course, set its category to "personal" only when it's clearly personal — default to "work" for anything school/teaching-related or ambiguous. For add_task, if the task belongs to a project/course listed above, match that project's WORK/PERSONAL tag unless she says otherwise.
 When Tahira asks to remove, cancel or delete an event, propose delete_event with that event's id from the Upcoming events list above. When she asks to change its title or date, propose update_event.
 When Tahira asks to remove, cancel or delete a class from her timetable, propose delete_class with that class's id from the Timetable classes list above. When she asks to change a class's day, time, subject or room, propose update_class, only including the fields that changed.
 When Tahira shares a status update, progress, or something that happened on a specific project or course ("I finished the literature review", "the Y11 mock is done", "struggled with the API today") — use log_update right away (no confirmation needed for this one) with that project's id from the Projects list above. If it clearly isn't tied to any listed project, use log_update with projectId null, or memory if it's more of a standing fact/preference than a one-off update.
+When Tahira mentions a new batch of marking or scripts to mark ("I've got 30 Y11 coursework scripts to mark", "add the Y12 mocks, 25 of them, due Friday") — propose add_marking (following the confirm-before-acting rule above) with className, assignment, total, and dueDate (from the DATE REFERENCE table if she gives one, else null). When she reports marking progress ("I've marked 5 more of the Y11 coursework", "finished the rest of the Y12 mocks") — use update_marking_progress right away (no confirmation needed) with that batch's id from the Marking list above and markedDelta (the number of extra scripts marked; use a large number like 999 for "finished the rest").
+Tahira may have term/holiday dates loaded (shown above as "Currently in X term" or "Currently on a break"). Use this only to understand timing and workload — never propose adding or changing term dates yourself; she manages those in Settings.
 Reply with ONLY a JSON object, no other text, shaped exactly as:
-{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20,"category":"work|personal"} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course","category":"work|personal"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD","category":"work|personal"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} ], "memory": "a short standing fact worth remembering long-term, or null"}
+{"reply": "what JAGU says out loud", "actions": [ {"type":"add_task","title":"...","projectId":"<id or null>","estMinutes":20,"category":"work|personal"} | {"type":"complete_task","taskId":"<id>"} | {"type":"start_focus","taskId":"<id or null>","minutes":25} | {"type":"add_project","name":"...","kind":"project|course","category":"work|personal"} | {"type":"add_event","title":"...","date":"YYYY-MM-DD","category":"work|personal"} | {"type":"delete_event","eventId":"<id>"} | {"type":"update_event","eventId":"<id>","title":"...","date":"YYYY-MM-DD"} | {"type":"delete_class","classId":"<id>"} | {"type":"update_class","classId":"<id>","day":0,"start":"HH:MM","end":"HH:MM","subject":"...","room":"..."} | {"type":"log_update","projectId":"<id or null>","text":"..."} | {"type":"add_marking","className":"...","assignment":"...","total":30,"dueDate":"YYYY-MM-DD or null"} | {"type":"update_marking_progress","markingId":"<id>","markedDelta":5} ], "memory": "a short standing fact worth remembering long-term, or null"}
 Use an empty actions array when no action is needed. Only include a memory fact for standing facts/preferences (not one-off updates, which belong in log_update, and not dated events, which belong in add_event).`;
 
 async function callJagu(userText){
@@ -393,6 +408,25 @@ export async function applyActions(actions){
       } else if(a.type==="log_update" && a.text){
         await dbAdd("updates", {projectId:a.projectId||null, text:a.text});
         results.push({type:a.type, ok:true});
+      } else if(a.type==="add_marking" && a.className && a.assignment){
+        const dupMarking = state.marking.some(m=> (m.marked||0)<m.total && normText(m.className)===normText(a.className) && normText(m.assignment)===normText(a.assignment));
+        if(dupMarking){
+          results.push({type:a.type, ok:true, reason:"duplicate — already in the marking queue, skipped"});
+        } else {
+          const total = Math.max(1, Number(a.total)||1);
+          const dueDate = a.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(a.dueDate) ? a.dueDate : null;
+          await dbAdd("marking", {className:a.className, assignment:a.assignment, total, marked:0, dueDate});
+          results.push({type:a.type, ok:true});
+        }
+      } else if(a.type==="update_marking_progress" && a.markingId){
+        const m = state.marking.find(x=>x.id===cleanId(a.markingId));
+        const ok = !!m;
+        if(ok){
+          const delta = Number(a.markedDelta)||0;
+          const newMarked = Math.max(0, Math.min(m.total, (m.marked||0)+delta));
+          await dbUpdate("marking", m.id, {marked:newMarked});
+        }
+        results.push({type:a.type, ok, reason: ok?null:"no marking batch matched that id"});
       } else {
         results.push({type:a.type, ok:false, reason:"unrecognized action or missing fields"});
       }
@@ -409,7 +443,7 @@ export async function handleUserMessage(text){
   if(res.memory){ dbAdd("memory", {text:res.memory}); }
   if(res.actions && res.actions.length){
     const results = await applyActions(res.actions);
-    const failed = results.find(r=> r.ok===false && /^(delete_event|update_event|delete_class|update_class|complete_task)$/.test(r.type));
+    const failed = results.find(r=> r.ok===false && /^(delete_event|update_event|delete_class|update_class|complete_task|update_marking_progress)$/.test(r.type));
     if(failed){
       showToast("Hmm, that didn't actually go through — I couldn't match that to anything. Try again, naming it more specifically.", "error");
     }
