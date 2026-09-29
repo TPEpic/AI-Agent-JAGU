@@ -29,21 +29,25 @@ function openProjectModal(){
   openFormModal("New project or course", [
     {name:"name", label:"Name", placeholder:"e.g. Machine Learning"},
     {name:"kind", label:"Type", type:"select", options:[["course","Course"],["project","Project"]]},
+    {name:"category", label:"Category", type:"select", options:[["work","Work"],["personal","Personal"]]},
     {name:"deadline", label:"Deadline (optional)", type:"date"},
   ], async (data)=>{
     if(!data.name) return;
-    await dbAdd("projects", {name:data.name, kind:data.kind||"course", deadline:data.deadline||null, progress:0, archived:false});
+    await dbAdd("projects", {name:data.name, kind:data.kind||"course", category:data.category==="personal"?"personal":"work", deadline:data.deadline||null, progress:0, archived:false});
     showToast("Added "+data.name);
   }, "Add");
 }
 
 export function openTaskModal(projectId){
+  const project = state.projects.find(p=>p.id===projectId);
+  const defaultPersonal = !!project && project.category==="personal";
   openFormModal("New task", [
     {name:"title", label:"Task", placeholder:"e.g. Neural network exercise"},
     {name:"estMinutes", label:"Estimated minutes", type:"number", value:25},
+    {name:"category", label:"Category", type:"select", options: defaultPersonal ? [["personal","Personal"],["work","Work"]] : [["work","Work"],["personal","Personal"]]},
   ], async (data)=>{
     if(!data.title) return;
-    await dbAdd("tasks", {projectId, title:data.title, estMinutes:Number(data.estMinutes)||20, status:"pending", completedAt:null});
+    await dbAdd("tasks", {projectId, title:data.title, estMinutes:Number(data.estMinutes)||20, category:data.category==="personal"?"personal":"work", status:"pending", completedAt:null});
   }, "Add task");
 }
 

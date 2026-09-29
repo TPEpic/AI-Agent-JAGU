@@ -3,6 +3,7 @@ import { initStandalone } from './state.js';
 import { LIVE, isLiveModel, liveSendUserText } from './live-api.js';
 import { handleUserMessage } from './ai.js';
 import { initFrameBanner, runDiagnostics } from './diagnostics.js';
+import './settings.js';
 
 // ── TEXT INPUT ──
 $("#text-form").addEventListener("submit", (e)=>{

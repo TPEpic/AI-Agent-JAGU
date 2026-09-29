@@ -110,6 +110,14 @@ export function allPendingTasks(){
 }
 export function projectById(id){ return state.projects.find(p=>p.id===id); }
 
+// A task's own category wins; otherwise it takes its parent project's
+// category; otherwise (no category anywhere) it defaults to work.
+export function taskCategory(t){
+  if(t.category==="personal" || t.category==="work") return t.category;
+  const p = projectById(t.projectId);
+  return (p && p.category==="personal") ? "personal" : "work";
+}
+
 export function projectProgress(project){
   const ts = state.tasks.filter(t=>t.projectId===project.id);
   if(ts.length===0) return project.progress||0;
@@ -199,6 +207,7 @@ function renderDashboard(){
     return '<div class="card"><div class="proj-top"><div><div class="proj-name">'+esc(p.name)+'</div><div class="proj-kind">'+esc(p.kind)+'</div></div><div class="proj-pct">'+pct+'%</div></div><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
   }).join("") : '<div class="empty-state">No projects or courses yet. Add one from the Learning tab.</div>';
 
+  renderTodoList("#todo-list");
   renderUpcomingEvents("#events-list");
 
   const recentNotes = state.updates.slice(0,5);
@@ -211,6 +220,25 @@ function renderDashboard(){
       return '<div class="note-row"><span class="note-dot"></span><div class="note-body"><div class="note-text">'+esc(n.text)+(p?' <span style="color:var(--text-faint);">— '+esc(p.name)+'</span>':'')+'</div><div class="note-when">'+when+'</div></div></div>';
     }).join("") : '<div class="empty-state">No notes yet — tell JAGU an update and I\'ll log it here.</div>';
   }
+}
+
+function renderTodoList(sel){
+  const target = $(sel);
+  if(!target) return;
+  const pending = allPendingTasks().slice().sort((a,b)=> new Date(a.createdAt||0)-new Date(b.createdAt||0));
+  if(!pending.length){ target.innerHTML = '<div class="empty-state">Nothing on your to-do list.</div>'; return; }
+
+  function todoRow(t){
+    const p = projectById(t.projectId);
+    const meta = (p?esc(p.name)+" · ":"")+(t.estMinutes||20)+" min";
+    return '<div class="event-row"><div><div class="event-title">'+esc(t.title)+'</div><div class="event-when">'+meta+'</div></div></div>';
+  }
+  const work = pending.filter(t=> taskCategory(t)==="work");
+  const personal = pending.filter(t=> taskCategory(t)==="personal");
+  let html = "";
+  if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(todoRow).join("");
+  if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(todoRow).join("");
+  target.innerHTML = html;
 }
 
 function renderUpcomingEvents(sel){
@@ -234,6 +262,23 @@ function renderUpcomingEvents(sel){
 
 
 // ── RENDERING LEARNING ──
+function projectCardHtml(p){
+  const pct = projectProgress(p);
+  const tasks = state.tasks.filter(t=>t.projectId===p.id).sort((a,b)=> (a.status==="done")-(b.status==="done") || new Date(a.createdAt)-new Date(b.createdAt));
+  const taskHtml = tasks.length ? tasks.map(t=>taskRowHtml(t)).join("") : '<div style="color:var(--text-faint); font-size:12.5px; padding:6px 0;">No tasks yet.</div>';
+  const notes = state.updates.filter(u=>u.projectId===p.id).slice(0,3);
+  const notesHtml = notes.length ? '<div class="note-list">'+notes.map(n=>noteRowHtml(n)).join("")+'</div>' : '';
+  return '<div class="proj-card" data-project="'+p.id+'">'
+    + '<div class="proj-top"><div><div class="proj-name">'+esc(p.name)+'</div><div class="proj-kind">'+esc(p.kind)+(p.deadline?" · due "+esc(p.deadline):"")+'</div></div><div class="proj-pct">'+pct+'%</div></div>'
+    + '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
+    + '<div class="task-list">'+taskHtml+'</div>'
+    + '<a class="link-row" data-add-task="'+p.id+'">+ Add task</a>'
+    + '<a class="link-row" data-add-note="'+p.id+'" style="margin-left:14px;">+ Note</a>'
+    + '<a class="link-row" data-del-project="'+p.id+'" style="color:var(--danger); float:right;">Delete</a>'
+    + notesHtml
+    + '</div>';
+}
+
 function renderLearning(){
   const list = $("#projects-list");
   const projects = state.projects.filter(p=>!p.archived);
@@ -241,22 +286,10 @@ function renderLearning(){
     list.innerHTML = '<div class="empty-state">Nothing here yet. Add a project or course to start tracking progress.</div>';
     return;
   }
-  list.innerHTML = projects.map(p=>{
-    const pct = projectProgress(p);
-    const tasks = state.tasks.filter(t=>t.projectId===p.id).sort((a,b)=> (a.status==="done")-(b.status==="done") || new Date(a.createdAt)-new Date(b.createdAt));
-    const taskHtml = tasks.length ? tasks.map(t=>taskRowHtml(t)).join("") : '<div style="color:var(--text-faint); font-size:12.5px; padding:6px 0;">No tasks yet.</div>';
-    const notes = state.updates.filter(u=>u.projectId===p.id).slice(0,3);
-    const notesHtml = notes.length ? '<div class="note-list">'+notes.map(n=>noteRowHtml(n)).join("")+'</div>' : '';
-    return '<div class="proj-card" data-project="'+p.id+'">'
-      + '<div class="proj-top"><div><div class="proj-name">'+esc(p.name)+'</div><div class="proj-kind">'+esc(p.kind)+(p.deadline?" · due "+esc(p.deadline):"")+'</div></div><div class="proj-pct">'+pct+'%</div></div>'
-      + '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
-      + '<div class="task-list">'+taskHtml+'</div>'
-      + '<a class="link-row" data-add-task="'+p.id+'">+ Add task</a>'
-      + '<a class="link-row" data-add-note="'+p.id+'" style="margin-left:14px;">+ Note</a>'
-      + '<a class="link-row" data-del-project="'+p.id+'" style="color:var(--danger); float:right;">Delete</a>'
-      + notesHtml
-      + '</div>';
-  }).join("");
+  const work = projects.filter(p=> p.category!=="personal");
+  const personal = projects.filter(p=> p.category==="personal");
+  const section = (label, ps)=> ps.length ? '<div class="event-group-label">'+label+'</div>'+ps.map(projectCardHtml).join("") : "";
+  list.innerHTML = section("Work", work) + section("Personal", personal);
 
   $$('[data-add-task]', list).forEach(el=> el.addEventListener("click", ()=> openTaskModal(el.dataset.addTask)));
   $$('[data-add-note]', list).forEach(el=> el.addEventListener("click", ()=> openNoteModal(el.dataset.addNote)));
