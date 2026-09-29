@@ -11,6 +11,7 @@ function goScreen(name){
   if(name==="timetable") renderTimetable();
 }
 $$(".nav-btn").forEach(b=> b.addEventListener("click", ()=>goScreen(b.dataset.screen)));
+$("#home-avatar").addEventListener("click", ()=> goScreen("settings"));
 
 
 // ── TIME/STATUS LOGIC ──
@@ -102,6 +103,13 @@ export function renderAll(){
 function renderHomeStatus(){
   const name = state.profile.name || "there";
   $("#greeting-text").textContent = greetingWord()+", "+name.split(" ")[0]+".";
+
+  const homeAvatar = $("#home-avatar");
+  if(homeAvatar){
+    const initial = (state.profile.name||"?").trim().charAt(0).toUpperCase() || "?";
+    homeAvatar.style.backgroundImage = state.profile.avatar ? "url('"+state.profile.avatar+"')" : "";
+    homeAvatar.textContent = state.profile.avatar ? "" : initial;
+  }
 
   const st = computeStatus();
   let line = "";

@@ -92,6 +92,8 @@ button{cursor:pointer; background:none; border:none;}
 
 /* ============================= HOME ============================= */
 .greeting{ padding:14px 2px 0; }
+.greeting-row{ display:flex; align-items:center; gap:12px; }
+.home-avatar{ width:48px; height:48px; font-size:18px; flex-shrink:0; }
 #greeting-text{ font-family:var(--font-d); font-style:italic; font-size:34px; font-weight:600; line-height:1.15; color:var(--accent); }
 .status-line{ margin-top:10px; color:var(--text-dim); font-size:14.5px; line-height:1.55; }
 .term-line{ margin-top:4px; color:var(--text-faint); font-size:12.5px; }
