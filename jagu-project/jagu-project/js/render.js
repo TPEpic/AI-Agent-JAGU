@@ -2,6 +2,7 @@ import { $, $$, daysUntil, esc, fmtMinutes, minToLabel, nowMin, pad2, showToast,
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete, dbUpdate, persist, state } from './state.js';
 import { openClassNotesModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
+import { speak } from './voice.js';
 
 // ── NAVIGATION ──
 function goScreen(name){
@@ -541,10 +542,29 @@ export function addChatBubble(role, text){
 
 
 // ── REMINDER CHECKS ──
+const CLASS_REMINDER_LEAD_MIN = 10;
+const remindedClasses = new Set();
+function checkClassReminders(){
+  const nm = nowMin();
+  const todayStr = todayISO();
+  todaysEntries().forEach(c=>{
+    if(!c.notes || !c.notes.trim()) return;
+    const minsUntil = timeToMin(c.start) - nm;
+    if(minsUntil < 0 || minsUntil > CLASS_REMINDER_LEAD_MIN) return;
+    const key = c.id+"_"+todayStr;
+    if(remindedClasses.has(key)) return;
+    remindedClasses.add(key);
+    const msg = "Reminder for "+c.subject+" in "+minsUntil+" minute"+(minsUntil===1?"":"s")+": "+c.notes;
+    showToast(msg);
+    speak(msg);
+  });
+}
+
 setInterval(()=>{
   if(!bootDone) return;
   renderHomeStatus();
   renderSuggestion();
   if($("#screen-dashboard").classList.contains("active")) renderDashboard();
+  checkClassReminders();
 }, 60000);
 
