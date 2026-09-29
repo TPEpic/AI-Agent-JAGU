@@ -131,6 +131,25 @@ function renderHomeStatus(){
       termLine.classList.add("hidden");
     }
   }
+
+  renderHomeHighlights();
+}
+
+// A quick glance at the next 1-2 upcoming events, each clearly tagged
+// Work or Personal, so Tahira doesn't have to open the Dashboard to see
+// what's coming.
+function renderHomeHighlights(){
+  const target = $("#home-highlights");
+  if(!target) return;
+  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,2);
+  if(!upcoming.length){ target.classList.add("hidden"); target.innerHTML=""; return; }
+  target.classList.remove("hidden");
+  target.innerHTML = upcoming.map(e=>{
+    const dleft = daysUntil(e.date);
+    const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
+    const cat = e.category==="personal" ? "personal" : "work";
+    return '<div class="highlight-row '+cat+'"><span class="highlight-cat">'+(cat==="personal"?"Personal":"Work")+'</span><span class="highlight-title">'+esc(e.title)+'</span><span class="highlight-when">'+when+'</span></div>';
+  }).join("");
 }
 
 function pendingTasksFor(projectId){
@@ -244,8 +263,8 @@ function renderDashboard(){
     return '<div class="card"><div class="proj-top"><div><div class="proj-name">'+esc(p.name)+'</div><div class="proj-kind">'+esc(p.kind)+'</div></div><div class="proj-pct">'+pct+'%</div></div><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
   }).join("") : '<div class="empty-state">No projects or courses yet. Add one from the Learning tab.</div>';
 
-  renderTodoList("#todo-list");
-  renderUpcomingEvents("#events-list");
+  renderCategoryPanel("work", "#work-todo-list", "#work-events-list");
+  renderCategoryPanel("personal", "#personal-todo-list", "#personal-events-list");
 
   const recentNotes = state.updates.slice(0,5);
   const notesTarget = $("#dash-notes");
@@ -259,23 +278,30 @@ function renderDashboard(){
   }
 }
 
-function renderTodoList(sel){
-  const target = $(sel);
-  if(!target) return;
-  const pending = allPendingTasks().slice().sort((a,b)=> new Date(a.createdAt||0)-new Date(b.createdAt||0));
-  if(!pending.length){ target.innerHTML = '<div class="empty-state">Nothing on your to-do list.</div>'; return; }
+function todoRowHtml(t){
+  const p = projectById(t.projectId);
+  const meta = (p?esc(p.name)+" · ":"")+(t.estMinutes||20)+" min";
+  return '<div class="event-row"><div><div class="event-title">'+esc(t.title)+'</div><div class="event-when">'+meta+'</div></div></div>';
+}
+function eventRowHtml(e){
+  const dleft = daysUntil(e.date);
+  const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
+  return '<div class="event-row"><div><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div><div class="event-badge">'+esc(when)+'</div></div>';
+}
 
-  function todoRow(t){
-    const p = projectById(t.projectId);
-    const meta = (p?esc(p.name)+" · ":"")+(t.estMinutes||20)+" min";
-    return '<div class="event-row"><div><div class="event-title">'+esc(t.title)+'</div><div class="event-when">'+meta+'</div></div></div>';
+// Renders one category's (work/personal) Tasks and Events panels on the
+// Dashboard — a task or event's own category decides which side it's on.
+function renderCategoryPanel(category, taskSel, eventSel){
+  const taskTarget = $(taskSel);
+  if(taskTarget){
+    const pending = allPendingTasks().filter(t=> taskCategory(t)===category).sort((a,b)=> new Date(a.createdAt||0)-new Date(b.createdAt||0));
+    taskTarget.innerHTML = pending.length ? pending.map(todoRowHtml).join("") : '<div class="empty-sub">Nothing to do.</div>';
   }
-  const work = pending.filter(t=> taskCategory(t)==="work");
-  const personal = pending.filter(t=> taskCategory(t)==="personal");
-  let html = "";
-  if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(todoRow).join("");
-  if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(todoRow).join("");
-  target.innerHTML = html;
+  const eventTarget = $(eventSel);
+  if(eventTarget){
+    const upcoming = state.events.filter(e=> daysUntil(e.date)>=0 && (e.category==="personal"?"personal":"work")===category).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date));
+    eventTarget.innerHTML = upcoming.length ? upcoming.map(eventRowHtml).join("") : '<div class="empty-sub">No upcoming events.</div>';
+  }
 }
 
 function markingRowHtml(m){
@@ -322,25 +348,6 @@ async function toggleMarkingDone(id){
 async function deleteMarking(id){
   if(!confirm("Delete this marking batch?")) return;
   await dbDelete("marking", id);
-}
-
-function renderUpcomingEvents(sel){
-  const upcoming = state.events.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date)).slice(0,20);
-  const target = $(sel);
-  if(!target) return;
-  if(!upcoming.length){ target.innerHTML = '<div class="empty-state">No upcoming events.</div>'; return; }
-
-  function eventRow(e){
-    const dleft = daysUntil(e.date);
-    const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
-    return '<div class="event-row"><div><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div><div class="event-badge">'+esc(when)+'</div></div>';
-  }
-  const work = upcoming.filter(e=> (e.category||"work")==="work");
-  const personal = upcoming.filter(e=> e.category==="personal");
-  let html = "";
-  if(work.length) html += '<div class="event-group-label">Work</div>'+work.map(eventRow).join("");
-  if(personal.length) html += '<div class="event-group-label">Personal</div>'+personal.map(eventRow).join("");
-  target.innerHTML = html;
 }
 
 
@@ -437,8 +444,6 @@ function renderTimetable(){
   const list = $("#timetable-list");
   list.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
   wireTtRowDeletes(list);
-
-  renderUpcomingEvents("#events-list-2");
 }
 
 

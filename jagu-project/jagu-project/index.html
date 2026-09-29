@@ -44,6 +44,8 @@
         <p id="term-line" class="status-line term-line hidden"></p>
       </div>
 
+      <div id="home-highlights" class="stack home-highlights hidden"></div>
+
       <div class="orb-wrap">
         <button id="orb" class="orb state-idle" aria-label="Talk to JAGU">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3.5M9 20.5h6"/></svg>
@@ -81,10 +83,27 @@
       <div id="marking-list" class="stack"></div>
       <h2 class="section-heading">Learning progress</h2>
       <div id="progress-list" class="stack"></div>
-      <h2 class="section-heading">To-do</h2>
-      <div id="todo-list" class="stack"></div>
-      <h2 class="section-heading">Coming up</h2>
-      <div id="events-list" class="stack"></div>
+
+      <div class="row-gap" style="justify-content:flex-end; margin:26px 0 4px;">
+        <button id="add-event-btn" class="btn-small ghost">+ Add event</button>
+      </div>
+
+      <h2 class="section-heading" style="margin-top:8px;">Work</h2>
+      <div class="category-panel work">
+        <div class="category-subhead">Tasks</div>
+        <div id="work-todo-list" class="stack"></div>
+        <div class="category-subhead">Events</div>
+        <div id="work-events-list" class="stack"></div>
+      </div>
+
+      <h2 class="section-heading">Personal</h2>
+      <div class="category-panel personal">
+        <div class="category-subhead">Tasks</div>
+        <div id="personal-todo-list" class="stack"></div>
+        <div class="category-subhead">Events</div>
+        <div id="personal-events-list" class="stack"></div>
+      </div>
+
       <h2 class="section-heading">Recent notes</h2>
       <div id="dash-notes" class="card"></div>
     </section>
@@ -111,10 +130,6 @@
       <div id="day-tabs" class="day-tabs"></div>
       <div id="timetable-list" class="stack"></div>
       <input type="file" id="timetable-photo-input" accept="image/*" class="hidden">
-
-      <h2 class="section-heading">Events</h2>
-      <div id="events-list-2" class="stack"></div>
-      <button id="add-event-btn" class="btn-small ghost" style="margin-top:12px;">+ Add event</button>
     </section>
 
     <!-- SETTINGS -->

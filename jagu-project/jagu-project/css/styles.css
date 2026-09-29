@@ -96,6 +96,14 @@ button{cursor:pointer; background:none; border:none;}
 .status-line{ margin-top:10px; color:var(--text-dim); font-size:14.5px; line-height:1.55; }
 .term-line{ margin-top:4px; color:var(--text-faint); font-size:12.5px; }
 
+.home-highlights{ margin:16px 0 4px; }
+.highlight-row{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-s); padding:10px 14px; font-size:13px; }
+.highlight-cat{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:99px; flex-shrink:0; }
+.highlight-row.work .highlight-cat{ background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); }
+.highlight-row.personal .highlight-cat{ background:color-mix(in srgb, var(--violet) 15%, transparent); color:var(--violet); }
+.highlight-title{ flex:1; font-weight:500; color:var(--text); }
+.highlight-when{ font-size:11.5px; color:var(--text-faint); flex-shrink:0; }
+
 .orb-wrap{ display:flex; flex-direction:column; align-items:center; padding:28px 0 20px; }
 .orb{
   width:92px; height:92px; border-radius:50%; position:relative;
@@ -173,6 +181,13 @@ button{cursor:pointer; background:none; border:none;}
 
 .event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
 .event-group-label:first-child{ margin-top:0; }
+
+.category-panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:18px; }
+.category-panel.work{ border-left:3px solid var(--accent); }
+.category-panel.personal{ border-left:3px solid var(--violet); }
+.category-subhead{ font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.07em; margin:14px 0 8px; }
+.category-subhead:first-child{ margin-top:0; }
+.empty-sub{ color:var(--text-faint); font-size:12.5px; padding:2px 0 6px; }
 
 .today-row{ display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
 .today-row:last-child{ border-bottom:none; }
