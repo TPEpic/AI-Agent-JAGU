@@ -7,6 +7,7 @@
   --accent:#4056A1; --accent-2:#304079; --accent-ink:#FBF6E9;
   --violet:#F76C6C; --violet-ink:color-mix(in srgb, #F76C6C 16%, white);
   --amber:#A8D0E6; --amber-ink:color-mix(in srgb, #A8D0E6 32%, white); --danger:#B3432F; --danger-ink:#FBEAE5;
+  --rag-green:#3FA66B; --rag-amber:#D79922; --rag-red:var(--danger);
   --radius-s:10px; --radius-m:16px; --radius-l:22px;
   --font-d:'Fraunces',Georgia,serif; --font-b:'Work Sans',Arial,sans-serif; --font-m:'Work Sans',Arial,sans-serif;
   --shadow: 0 12px 32px rgba(35,38,74,.10);
@@ -428,6 +429,7 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .progress-cell{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface-2); border:1px solid var(--border); font-size:15px; display:flex; align-items:center; justify-content:center; }
 .progress-task-label{ width:34px; flex-shrink:0; font-size:9px; color:var(--text-faint); text-align:center; line-height:1.2; overflow:hidden; }
 .progress-legend{ display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); font-size:12px; color:var(--text-dim); }
+.rag-dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
 
 .highlight-row{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
 .highlight-row:last-child{ border-bottom:none; }

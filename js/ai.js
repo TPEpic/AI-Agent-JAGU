@@ -5,6 +5,7 @@ import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { HAS_TTS, setOrb, speak, voiceUnlocked } from './voice.js';
 import { isLiveModel } from './live-api.js';
+import { classroomSummaryForAI } from './classroom.js';
 
 // ── CLAUDE API ──
 async function callAI(promptText, opts){
@@ -260,6 +261,12 @@ export function buildContext(){
   if(activeMarking.length){
     lines.push("Marking still to do (use the id to log progress):");
     activeMarking.forEach(m=> lines.push("- ["+m.id+"] "+m.assignment+" ("+m.className+"): "+(m.marked||0)+"/"+m.total+" marked"+(m.dueDate?", due "+m.dueDate+" ("+daysUntil(m.dueDate)+" day(s))":"")));
+  }
+
+  const classroomLines = classroomSummaryForAI();
+  if(classroomLines.length){
+    lines.push("Class Workspace — learners currently behind (under 80% complete) and active reminders, by class:");
+    lines.push(...classroomLines);
   }
 
   const term = currentTermInfo();

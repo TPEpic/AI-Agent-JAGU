@@ -14,6 +14,14 @@ const PROGRESS_LABEL = { not_started:"Not started", in_progress:"In progress", n
 const HIGHLIGHT_ICON = { warning:"⚠️", performance:"📈", appreciation:"⭐", task:"📋" };
 const HIGHLIGHT_LABEL = { warning:"Warning", performance:"Performance", appreciation:"Appreciation", task:"Individual task" };
 
+// Red/amber/green at-a-glance status for a learner's overall assignment
+// progress -- green 80%+, amber 40-79%, red under 40%.
+function ragStatus(pct){
+  if(pct>=80) return {color:"var(--rag-green)", label:"On track ("+pct+"% complete)"};
+  if(pct>=40) return {color:"var(--rag-amber)", label:"Behind ("+pct+"% complete)"};
+  return {color:"var(--rag-red)", label:"Well behind ("+pct+"% complete)"};
+}
+
 function subjectDisplay(classKey){
   const row = state.timetable.find(t=> classKeyFor(t.subject)===classKey);
   return row ? row.subject : classKey;
@@ -60,6 +68,32 @@ function needsCheckingCountFor(learnerId, classKey){
 export function activeTaskRemindersForClass(classKey){
   const ids = learnersForClass(classKey).map(l=>l.id);
   return state.learnerHighlights.filter(h=> h.type==="task" && h.status!=="done" && h.classKey===classKey && ids.includes(h.learnerId));
+}
+
+// A compact, ready-to-inject summary of every class's learners who are
+// behind (amber/red) and any active learner reminders, so JAGU can answer
+// things like "who's behind in Unit 4" or "what do I need to follow up on"
+// by voice/chat without a dedicated action.
+export function classroomSummaryForAI(){
+  const lines = [];
+  allClassKeys().forEach(classKey=>{
+    const learners = learnersForClass(classKey);
+    const assignments = assignmentsForClass(classKey);
+    if(!learners.length) return;
+    const behind = [];
+    learners.forEach(l=>{
+      const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,l.id),0)/assignments.length) : null;
+      if(avgPct!=null && avgPct<80) behind.push(l.name+" ("+avgPct+"%, "+(avgPct<40?"well behind":"behind")+")");
+    });
+    const reminders = activeTaskRemindersForClass(classKey).map(h=>{
+      const l = state.learners.find(x=>x.id===h.learnerId);
+      return (l?l.name+": ":"")+h.text;
+    });
+    if(behind.length || reminders.length){
+      lines.push("- "+subjectDisplay(classKey)+(behind.length?" — behind: "+behind.join(", "):"")+(reminders.length?(behind.length?"; ":" — ")+"reminders: "+reminders.join("; "):""));
+    }
+  });
+  return lines;
 }
 
 // ── LIST OF CLASSES (derived from the timetable) ──
@@ -133,8 +167,10 @@ export function renderClassroom(){
       .concat(active.some(h=>h.type==="warning") ? "⚠️" : [])
       .concat(active.some(h=>h.type==="task") ? "📋" : [])
       .concat(state.learnerHighlights.some(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation") ? "⭐" : []);
+    const rag = assignments.length ? ragStatus(avgPct) : null;
+    const dot = rag ? '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+';" title="'+esc(rag.label)+'"></span>' : '';
     return '<div class="event-row" data-learner="'+l.id+'" style="cursor:pointer;">'
-      + '<div><div class="event-title">'+esc(l.name)+'</div><div class="event-when">'+(assignments.length? avgPct+"% avg progress" : "No assignments yet")+'</div></div>'
+      + '<div style="display:flex; align-items:center; gap:9px; min-width:0;">'+dot+'<div><div class="event-title">'+esc(l.name)+'</div><div class="event-when">'+(assignments.length? avgPct+"% avg progress" : "No assignments yet")+'</div></div></div>'
       + '<div style="display:flex; align-items:center; gap:10px;"><span style="font-size:15px;">'+icons.join(" ")+'</span>'
       + '<span class="task-del" data-unenroll="'+l.id+'" title="Remove from class">✕</span></div>'
       + '</div>';
@@ -298,10 +334,14 @@ function openLearnerDetail(learnerId){
       return '<div class="card" style="margin-bottom:10px;"><div class="proj-top"><div class="proj-name">'+esc(a.title)+'</div><div class="proj-pct">'+pct+'%</div></div>'+taskRows+'</div>';
     }).join("") : '<div class="empty-sub">No assignments yet.</div>';
 
+    const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,learnerId),0)/assignments.length) : null;
+    const rag = avgPct!=null ? ragStatus(avgPct) : null;
+    const dot = rag ? '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+';" title="'+esc(rag.label)+'"></span>' : '';
+
     return '<div class="sheet" style="max-height:92%;">'
       + '<div class="sheet-handle"></div>'
-      + '<p class="sheet-title">'+esc(l.name)+'</p>'
-      + '<p style="color:var(--text-faint); font-size:12.5px; margin:-10px 0 16px;">'+esc(subjectDisplay(classKey))+'</p>'
+      + '<div style="display:flex; align-items:center; gap:9px;">'+dot+'<p class="sheet-title" style="margin:0;">'+esc(l.name)+'</p></div>'
+      + '<p style="color:var(--text-faint); font-size:12.5px; margin:6px 0 16px;">'+esc(subjectDisplay(classKey))+'</p>'
       + '<div class="row-gap" style="justify-content:flex-start; flex-wrap:wrap; margin-bottom:16px;">'
         + '<button class="btn-small ghost" data-quick="warning">+ Warning</button>'
         + '<button class="btn-small ghost" data-quick="performance">+ Performance</button>'
