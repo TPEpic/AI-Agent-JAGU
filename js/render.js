@@ -136,7 +136,7 @@ function renderHomeStatus(){
   } else {
     line = "Free for the rest of the working day.";
   }
-  $("#status-line").textContent = line;
+  $("#status-line").innerHTML = line;
 
   const term = currentTermInfo();
   const termLine = $("#term-line");
