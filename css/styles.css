@@ -239,14 +239,15 @@ button{cursor:pointer; background:none; border:none;}
 .stat-tile{ background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
 .stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
 .stat-label{ font-size:11px; color:var(--text-dim); margin-top:3px; line-height:1.35; }
-/* Give each stat tile its own strong tint so the row reads as distinct,
-   attention-grabbing facts, not one repeated pale-white block --
-   Tahira's requested 5-colour palette (color.adobe.com). */
-#dash-stats .stat-tile:nth-child(1){ border-left-color:#B349A6; background:color-mix(in srgb, #B349A6 16%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(2){ border-left-color:#9BEBDF; background:color-mix(in srgb, #9BEBDF 40%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(3){ border-left-color:#EA726D; background:color-mix(in srgb, #EA726D 18%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(4){ border-left-color:#65EB8B; background:color-mix(in srgb, #65EB8B 22%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(5){ border-left-color:#615170; background:color-mix(in srgb, #615170 16%, var(--surface)); }
+/* Give each stat tile its own tint so the row reads as distinct facts --
+   pulled straight from JAGU's own mark (the indigo orb, its gold
+   waveform, its coral mic) instead of an unrelated imported palette,
+   so the cards actually sit with the rest of the app. */
+#dash-stats .stat-tile:nth-child(1){ border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(2){ border-left-color:#D79922; background:color-mix(in srgb, #D79922 20%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(3){ border-left-color:var(--violet); background:color-mix(in srgb, var(--violet) 16%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(4){ border-left-color:var(--accent-2); background:color-mix(in srgb, var(--accent-2) 18%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(5){ border-left-color:#F13C20; background:color-mix(in srgb, #F13C20 12%, var(--surface)); }
 
 .event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
 .event-group-label:first-child{ margin-top:0; }
