@@ -121,13 +121,7 @@ button{cursor:pointer; background:none; border:none;}
   background:var(--accent); box-shadow:0 10px 26px color-mix(in srgb, var(--accent) 30%, transparent);
   transition:transform .25s ease, box-shadow .25s ease;
 }
-.orb-face{ position:absolute; left:50%; top:9px; transform:translateX(-50%); z-index:1; }
-.orb-mic-badge{
-  position:absolute; right:-2px; bottom:2px; z-index:2; width:28px; height:28px; border-radius:50%;
-  background:var(--accent-ink); border:3px solid var(--accent);
-  display:flex; align-items:center; justify-content:center;
-}
-.orb-mic-badge svg{ width:14px; height:14px; }
+.orb-face{ position:absolute; left:50%; top:6px; transform:translateX(-50%); z-index:1; }
 .orb-bar{ transform-box:fill-box; transform-origin:50% 100%; }
 .orb.state-idle{ animation:breathe 4s ease-in-out infinite; }
 @keyframes breathe{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.035);} }
@@ -235,15 +229,16 @@ button{cursor:pointer; background:none; border:none;}
   .dash-columns{ flex-direction:row; }
   .dash-columns > .category-panel{ flex:1; min-width:0; }
 }
-.stat-tile{ background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
+.stat-tile{ background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
 .stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
 .stat-label{ font-size:11px; color:var(--text-dim); margin-top:3px; line-height:1.35; }
-/* Give each stat tile its own tint so the row reads as distinct facts,
-   not one repeated white block. */
-#dash-stats .stat-tile:nth-child(4n+1){ border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 6%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(4n+2){ border-left-color:var(--amber); background:color-mix(in srgb, var(--amber) 22%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(4n+3){ border-left-color:var(--violet); background:color-mix(in srgb, var(--violet) 8%, var(--surface)); }
-#dash-stats .stat-tile:nth-child(4n+4){ border-left-color:var(--accent-2); background:color-mix(in srgb, var(--accent-2) 6%, var(--surface)); }
+/* Give each stat tile its own strong tint so the row reads as distinct,
+   attention-grabbing facts, not one repeated pale-white block. */
+#dash-stats .stat-tile:nth-child(1){ border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(2){ border-left-color:var(--amber); background:color-mix(in srgb, var(--amber) 38%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(3){ border-left-color:var(--violet); background:color-mix(in srgb, var(--violet) 18%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(4){ border-left-color:var(--danger); background:color-mix(in srgb, var(--danger) 15%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(5){ border-left-color:var(--accent-2); background:color-mix(in srgb, var(--accent-2) 16%, var(--surface)); }
 
 .event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
 .event-group-label:first-child{ margin-top:0; }
@@ -262,11 +257,12 @@ button{cursor:pointer; background:none; border:none;}
 /* The first row is always the live status (Now / Today / Free time) --
    call it out so it doesn't blend into the plain rows below it. */
 .today-row:first-child{
-  background:color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background:color-mix(in srgb, var(--violet) 20%, var(--surface));
+  border-left:4px solid var(--violet);
   border-bottom:none; border-radius:var(--radius-s);
-  padding:10px 12px; margin-bottom:2px;
+  padding:10px 12px 10px 10px; margin-bottom:2px;
 }
-.today-row:first-child .label{ color:var(--accent); font-weight:700; }
+.today-row:first-child .label{ color:var(--violet); font-weight:700; }
 
 .proj-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:20px; }
 .proj-top{ display:flex; justify-content:space-between; align-items:baseline; }
