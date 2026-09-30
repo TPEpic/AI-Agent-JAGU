@@ -223,6 +223,13 @@ button{cursor:pointer; background:none; border:none;}
 }
 .dash-panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:20px; }
 .dash-panel > .section-heading:first-child{ margin-top:0; }
+/* Same "coloured edge" treatment as the Work/Personal panels below, so
+   every Dashboard card is identifiable at a glance instead of a wall
+   of identical white boxes. */
+.dash-panel.classes-panel{ border-left:3px solid var(--accent); }
+.dash-panel.marking-panel{ border-left:3px solid var(--danger); }
+.dash-panel.progress-panel{ border-left:3px solid var(--amber); }
+.dash-panel.notes-panel{ border-left:3px solid var(--accent-2); }
 .dash-columns{ display:flex; flex-direction:column; gap:16px; }
 @media (min-width:980px){
   .dash-columns{ flex-direction:row; }
