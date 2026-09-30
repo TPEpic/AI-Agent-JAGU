@@ -102,7 +102,7 @@ button{cursor:pointer; background:none; border:none;}
 .home-avatar{ width:48px; height:48px; font-size:18px; flex-shrink:0; }
 #greeting-text{ font-family:var(--font-d); font-style:italic; font-size:34px; font-weight:600; line-height:1.15; color:var(--text); }
 .status-line{ margin-top:10px; color:var(--text-dim); font-size:14.5px; line-height:1.55; }
-#status-line{ color:#F76C6C; font-weight:500; }
+#status-line{ color:#F76C6C; font-weight:700; }
 .term-line{ margin-top:4px; color:var(--text-faint); font-size:12.5px; }
 
 .home-highlights{ margin:16px 0 4px; }
@@ -229,7 +229,7 @@ button{cursor:pointer; background:none; border:none;}
 }
 .stat-tile{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
 .stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
-.stat-label{ font-size:11px; color:var(--text-faint); margin-top:3px; line-height:1.35; }
+.stat-label{ font-size:11px; color:var(--text-dim); margin-top:3px; line-height:1.35; }
 
 .event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
 .event-group-label:first-child{ margin-top:0; }
@@ -244,7 +244,7 @@ button{cursor:pointer; background:none; border:none;}
 .today-row{ display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
 .today-row:last-child{ border-bottom:none; }
 .today-row .label{ color:var(--text-faint); font-family:var(--font-b); font-size:13px; padding-top:2px; }
-.today-row .val{ text-align:right; max-width:60%; font-weight:500; color:var(--text); }
+.today-row .val{ text-align:left; max-width:66%; font-weight:500; color:var(--text); }
 
 .proj-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:20px; }
 .proj-top{ display:flex; justify-content:space-between; align-items:baseline; }
