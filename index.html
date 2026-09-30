@@ -4,16 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>JAGU — Standalone Edition</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div id="app">
 
   <header id="topbar">
-    <div id="topbar-title">JAGU</div>
+    <div id="topbar-title">
+      <svg width="26" height="29" viewBox="0 0 80 88" fill="none" aria-hidden="true">
+        <rect x="16" y="16" width="6" height="14" rx="3" fill="#D79922"></rect>
+        <rect x="26" y="6" width="6" height="24" rx="3" fill="#D79922"></rect>
+        <rect x="48" y="6" width="6" height="24" rx="3" fill="#D79922"></rect>
+        <rect x="58" y="16" width="6" height="14" rx="3" fill="#D79922"></rect>
+        <circle cx="40" cy="52" r="28" fill="#4056A1"></circle>
+        <circle cx="29" cy="51" r="9" fill="#FBF6E9"></circle>
+        <circle cx="51" cy="51" r="9" fill="#FBF6E9"></circle>
+        <circle cx="29" cy="51" r="4" fill="#D79922"></circle>
+        <circle cx="51" cy="51" r="4" fill="#D79922"></circle>
+        <path d="M40 59 l-5 7 h10 z" fill="#F13C20"></path>
+      </svg>
+      <span>Jagu</span>
+    </div>
     <div id="topbar-right">
       <span id="clock">--:--</span>
       <span class="status-dots" title="System status">
@@ -293,9 +308,18 @@
   <div id="onboarding" class="overlay center hidden">
     <div class="sheet onboarding-sheet" style="border-radius:22px;">
       <div style="text-align:center; margin-bottom:6px;">
-        <div class="orb state-idle" style="width:80px;height:80px;margin:0 auto 18px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3.5M9 20.5h6"/></svg>
-        </div>
+        <svg width="72" height="79" viewBox="0 0 80 88" fill="none" style="margin:0 auto 18px; display:block;" aria-hidden="true">
+          <rect x="16" y="16" width="6" height="14" rx="3" fill="#D79922"></rect>
+          <rect x="26" y="6" width="6" height="24" rx="3" fill="#D79922"></rect>
+          <rect x="48" y="6" width="6" height="24" rx="3" fill="#D79922"></rect>
+          <rect x="58" y="16" width="6" height="14" rx="3" fill="#D79922"></rect>
+          <circle cx="40" cy="52" r="28" fill="#4056A1"></circle>
+          <circle cx="29" cy="51" r="9" fill="#FBF6E9"></circle>
+          <circle cx="51" cy="51" r="9" fill="#FBF6E9"></circle>
+          <circle cx="29" cy="51" r="4" fill="#D79922"></circle>
+          <circle cx="51" cy="51" r="4" fill="#D79922"></circle>
+          <path d="M40 59 l-5 7 h10 z" fill="#F13C20"></path>
+        </svg>
       </div>
       <p class="sheet-title" style="text-align:center;">Hey, I'm JAGU</p>
       <p style="color:var(--text-dim); font-size:14px; text-align:center; margin-bottom:22px; line-height:1.55;">

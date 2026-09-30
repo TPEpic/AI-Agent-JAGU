@@ -1,15 +1,15 @@
 
 /* ============================= TOKENS ============================= */
 :root{
-  --bg:#FAF8F4; --surface:#FFFFFF; --surface-2:#EDE9E0;
-  --border:#E7E2D9; --border-soft:#EFEBE2;
-  --text:#211F1C; --text-dim:#57534A; --text-faint:#8B8578; --text-muted:#B5AF9F;
-  --accent:#374785; --accent-2:#24305E; --accent-ink:#FAF8F4;
-  --violet:#F76C6C; --violet-ink:color-mix(in srgb, #F76C6C 14%, white);
-  --amber:#A8D0E6; --amber-ink:#F8E9A1; --danger:#B3432F; --danger-ink:#FBEAE5;
+  --bg:#FBF6E9; --surface:#FFFFFF; --surface-2:color-mix(in srgb, #EFE2BA 45%, white);
+  --border:color-mix(in srgb, #4056A1 14%, white); --border-soft:color-mix(in srgb, #4056A1 8%, white);
+  --text:#23264A; --text-dim:#55608C; --text-faint:#8D96B8; --text-muted:#BFC5DC;
+  --accent:#4056A1; --accent-2:#304079; --accent-ink:#FBF6E9;
+  --violet:#D79922; --violet-ink:color-mix(in srgb, #D79922 14%, white);
+  --amber:#F13C20; --amber-ink:#C5CBE3; --danger:#B3432F; --danger-ink:#FBEAE5;
   --radius-s:10px; --radius-m:16px; --radius-l:22px;
-  --font-d:'Newsreader',Georgia,serif; --font-b:'Public Sans',Arial,sans-serif; --font-m:'Public Sans',Arial,sans-serif;
-  --shadow: 0 12px 32px rgba(43,36,26,.10);
+  --font-d:'Fraunces',Georgia,serif; --font-b:'Work Sans',Arial,sans-serif; --font-m:'Work Sans',Arial,sans-serif;
+  --shadow: 0 12px 32px rgba(35,38,74,.10);
   --content-max: 1040px;
   --narrow-max: 640px;
 }
@@ -56,7 +56,8 @@ button{cursor:pointer; background:none; border:none;}
   border-bottom:1px solid var(--border);
   flex-shrink:0;
 }
-#topbar-title{ font-family:var(--font-b); font-weight:700; letter-spacing:.14em; font-size:13px; color:var(--text-dim); }
+#topbar-title{ display:flex; align-items:center; gap:9px; }
+#topbar-title span{ font-family:var(--font-d); font-style:italic; font-weight:700; font-size:19px; color:var(--text); }
 #topbar-right{ display:flex; align-items:center; gap:10px; }
 #clock{ font-family:var(--font-b); font-size:13px; font-weight:500; color:var(--text-dim); font-variant-numeric:tabular-nums; }
 .status-dots{ display:flex; gap:5px; align-items:center; }
@@ -229,7 +230,7 @@ button{cursor:pointer; background:none; border:none;}
 .proj-meta{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-faint); margin-top:9px; }
 .task-list{ margin-top:16px; display:flex; flex-direction:column; }
 .task-row{ display:flex; align-items:center; gap:11px; padding:10px 0; border-top:1px solid var(--border-soft); }
-.task-check{ width:19px; height:19px; border-radius:50%; border:1.5px solid #D8D2C4; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; }
+.task-check{ width:19px; height:19px; border-radius:50%; border:1.5px solid color-mix(in srgb, var(--accent) 22%, white); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; }
 .task-check.done{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .task-title{ flex:1; font-size:13.5px; color:var(--text); }
 .task-title.done{ color:var(--text-faint); text-decoration:line-through; }
