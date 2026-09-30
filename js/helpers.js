@@ -18,6 +18,10 @@ export function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+pad2(
 export function dateToDayIdx(dateStr){ return (new Date(dateStr+"T00:00:00").getDay()+6)%7; }
 export function dateToISO(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
 export function addDaysISO(dateStr, n){ const d = new Date(dateStr+"T00:00:00"); d.setDate(d.getDate()+n); return dateToISO(d); }
+// 24-hour "HH:MM" for pre-filling a <input type="time">, rounded up to the
+// next 5 minutes so a cover added "right now" actually starts now.
+export function minToHHMM(mins){ mins=((mins%1440)+1440)%1440; return pad2(Math.floor(mins/60))+":"+pad2(mins%60); }
+export function nowHHMM(){ const m = Math.ceil(nowMin()/5)*5; return minToHHMM(m); }
 
 export function showToast(msg, type){
   const root = $("#toast-root");

@@ -1,4 +1,4 @@
-import { $, addDaysISO, dateToDayIdx, esc, showToast, todayISO } from './helpers.js';
+import { $, addDaysISO, dateToDayIdx, esc, minToHHMM, nowHHMM, showToast, timeToMin, todayISO } from './helpers.js';
 import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 
 // ── GENERIC FORM MODAL ──
@@ -84,14 +84,16 @@ function openTimetableModal(){
 }
 
 function openCoverModal(){
+  const start = nowHHMM();
+  const end = minToHHMM(timeToMin(start)+60);
   openFormModal("Add cover session", [
     {name:"subject", label:"Class / subject", placeholder:"e.g. Cover for Mr Smith — Y10 Computing"},
     {name:"coverFor", label:"Covering for (optional)", placeholder:"e.g. Mr Smith"},
     {name:"room", label:"Room (optional)", placeholder:"e.g. B105"},
     {name:"startDate", label:"Date", type:"date", value:todayISO()},
     {name:"endDate", label:"Last day (optional — leave blank for a single day)", type:"date"},
-    {name:"start", label:"Start time", type:"time"},
-    {name:"end", label:"End time", type:"time"},
+    {name:"start", label:"Start time", type:"time", value:start},
+    {name:"end", label:"End time", type:"time", value:end},
     {name:"notes", label:"Notes (optional)", type:"textarea", placeholder:"e.g. Seating plan on their desk, cover work in the shared drive..."},
   ], async (data)=>{
     if(!data.subject || !data.startDate || !data.start || !data.end) return;
@@ -109,6 +111,35 @@ function openCoverModal(){
     }
     showToast("Cover added for "+count+" day"+(count===1?"":"s"));
   }, "Add cover");
+}
+
+export function openEditClassModal(classId){
+  const cls = state.timetable.find(c=>c.id===classId);
+  if(!cls) return;
+  const fields = [
+    {name:"subject", label:"Subject", value:cls.subject},
+  ];
+  if(cls.isCover){
+    fields.push({name:"coverFor", label:"Covering for (optional)", value:cls.coverFor||""});
+    fields.push({name:"date", label:"Date", type:"date", value:cls.date});
+  } else {
+    fields.push({name:"day", label:"Day", type:"select", value:String(cls.day), options: DAY_LABELS.map((d,i)=>[String(i),d])});
+  }
+  fields.push({name:"start", label:"Start time", type:"time", value:cls.start});
+  fields.push({name:"end", label:"End time", type:"time", value:cls.end});
+  fields.push({name:"room", label:"Room (optional)", value:cls.room||""});
+  openFormModal((cls.isCover?"Edit cover session":"Edit class"), fields, async (data)=>{
+    if(!data.subject || !data.start || !data.end) return;
+    const patch = {subject:data.subject, start:data.start, end:data.end, room:data.room||null};
+    if(cls.isCover){
+      if(!data.date) return;
+      patch.date = data.date; patch.day = dateToDayIdx(data.date); patch.coverFor = data.coverFor||null;
+    } else {
+      patch.day = Number(data.day);
+    }
+    await dbUpdate("timetable", classId, patch);
+    showToast("Updated");
+  }, "Save");
 }
 
 export function openClassNotesModal(classId){

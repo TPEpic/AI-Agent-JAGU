@@ -1,6 +1,6 @@
 import { $, $$, addDaysISO, daysUntil, esc, fmtMinutes, minToClock, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete, dbUpdate, persist, state } from './state.js';
-import { deleteEvent, openClassNotesModal, openEditEventModal, openEditTaskModal, openFormModal, openTaskModal } from './modals.js';
+import { deleteEvent, openClassNotesModal, openEditClassModal, openEditEventModal, openEditTaskModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { speak } from './voice.js';
 
@@ -55,12 +55,16 @@ function ttRowHtml(e){
   const coverLine = e.isCover ? '<div class="tt-cover-badge">COVER'+(dateLabel?" · "+dateLabel:"")+(e.coverFor?" · for "+esc(e.coverFor):"")+'</div>' : "";
   return '<div class="tt-row"><div class="tt-time">'+minToClock(timeToMin(e.start))+'<span class="tt-end">'+minToClock(timeToMin(e.end))+'</span></div><div class="tt-info">'+coverLine+'<div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
     + (hasNotes?'<div class="tt-note">'+esc(e.notes)+'</div>':'')
-    + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin-top:6px;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
+    + '<div class="row-gap" style="margin-top:6px;">'
+      + '<a class="link-row" data-tt-edit="'+e.id+'" style="font-size:12px; margin:0;">Edit</a>'
+      + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin:0;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
+    + '</div>'
     + '</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
 }
 function wireTtRowDeletes(root){
   $$('[data-tt]', root).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
   $$('[data-tt-note]', root).forEach(el=> el.addEventListener("click", ()=> openClassNotesModal(el.dataset.ttNote)));
+  $$('[data-tt-edit]', root).forEach(el=> el.addEventListener("click", ()=> openEditClassModal(el.dataset.ttEdit)));
 }
 
 // "Free" here always means free WITHIN the 9-5 working day -- outside
