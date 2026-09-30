@@ -42,7 +42,7 @@ export function loadPersisted(){
   Object.assign(state.profile, {
     theme:"dark", voiceOut:true, convoMode:false, voiceURI:null, rate:1, pitch:1,
     provider:"gemini",
-    geminiKey:"", geminiModel:"gemini-flash-latest",
+    geminiKey:"", geminiModel:"gemini-3.8-live",
     apiKey:"", model:"claude-sonnet-5",
     avatar:null, role:"", about:"",
   }, saved.profile||{});
