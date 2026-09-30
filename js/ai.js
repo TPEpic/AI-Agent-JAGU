@@ -1,6 +1,6 @@
-import { $, daysUntil, esc, fmtMinutes, minToLabel, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
+import { $, daysUntil, esc, fmtMinutes, minToClock, minToLabel, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, dbAdd, dbDelete, dbUpdate, state } from './state.js';
-import { addChatBubble, allPendingTasks, computeStatus, currentTermInfo, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
+import { WORK_END_MIN, WORK_START_MIN, addChatBubble, allPendingTasks, computeStatus, currentTermInfo, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
 import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { HAS_TTS, setOrb, speak, voiceUnlocked } from './voice.js';
@@ -212,12 +212,15 @@ export function buildContext(){
   const st = computeStatus();
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long"});
-  const timeStr = pad2(now.getHours())+":"+pad2(now.getMinutes());
+  const timeStr = minToClock(now.getHours()*60+now.getMinutes());
 
   let lines = [];
   lines.push("Today is "+dateStr+", current time "+timeStr+".");
-  if(st.state==="class") lines.push("Tahira is currently in "+st.current.subject+(st.current.room?" (Room "+st.current.room+")":"")+", until "+st.current.end+".");
-  else lines.push("Tahira is currently free for "+fmtMinutes(st.freeMinutes)+(st.next?", until "+st.next.subject+" at "+st.next.start:", for the rest of the day")+".");
+  lines.push("Tahira's working hours are "+minToLabel(WORK_START_MIN)+" to "+minToLabel(WORK_END_MIN)+" -- only count time inside that window as working/free time; outside it she's off the clock.");
+  if(st.state==="class") lines.push("Tahira is currently in "+st.current.subject+(st.current.room?" (Room "+st.current.room+")":"")+", until "+minToClock(timeToMin(st.current.end))+".");
+  else if(st.state==="before-hours") lines.push("Tahira's working day hasn't started yet -- it begins at "+minToLabel(WORK_START_MIN)+(st.next?", first class: "+st.next.subject+" at "+minToClock(timeToMin(st.next.start)):"")+".");
+  else if(st.state==="after-hours") lines.push("Tahira's working day has ended for today (ended at "+minToLabel(WORK_END_MIN)+").");
+  else lines.push("Tahira is currently free for "+fmtMinutes(st.freeMinutes)+(st.next?", until "+st.next.subject+" at "+minToClock(timeToMin(st.next.start)):", for the rest of the working day")+".");
 
   const projects = state.projects.filter(p=>!p.archived);
   if(projects.length){
@@ -455,12 +458,17 @@ export async function handleUserMessage(text){
 // ── GREET ON LAUNCH ──
 export function greet(){
   const st = computeStatus();
+  const name = (state.profile.name||"").split(" ")[0]||"";
   let msg;
   if(st.state==="class"){
-    msg = greetingWord()+", "+((state.profile.name||"").split(" ")[0]||"")+". You're in "+st.current.subject+" until "+minToLabel(timeToMin(st.current.end))+".";
+    msg = greetingWord()+", "+name+". You're in "+st.current.subject+" until "+minToLabel(timeToMin(st.current.end))+".";
+  } else if(st.state==="before-hours"){
+    msg = greetingWord()+", "+name+". Your working day starts at "+minToLabel(WORK_START_MIN)+".";
+  } else if(st.state==="after-hours"){
+    msg = greetingWord()+", "+name+". That's the working day done for today.";
   } else {
     const pick = pickFallbackTask(st.freeMinutes);
-    msg = greetingWord()+", "+((state.profile.name||"").split(" ")[0]||"")+". You've got "+fmtMinutes(st.freeMinutes)+" free"+(pick? " — I'd suggest "+pick.t.title+".":".");
+    msg = greetingWord()+", "+name+". You've got "+fmtMinutes(st.freeMinutes)+" free"+(pick? " — I'd suggest "+pick.t.title+".":".");
   }
   addChatBubble("assistant", msg);
   speak(msg);

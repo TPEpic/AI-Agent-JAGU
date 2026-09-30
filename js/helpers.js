@@ -4,6 +4,10 @@ export const $$ = (sel,root)=> Array.from((root||document).querySelectorAll(sel)
 export function pad2(n){ return String(n).padStart(2,"0"); }
 export function timeToMin(t){ if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+(m||0); }
 export function minToLabel(mins){ mins=((mins%1440)+1440)%1440; const h=Math.floor(mins/60), m=mins%60; const ap = h<12?"AM":"PM"; let h12=h%12; if(h12===0) h12=12; return h12+(m? ":"+pad2(m):"")+" "+ap; }
+// Same 12-hour AM/PM conversion as minToLabel, but always shows the
+// minutes (9:00 AM, not 9 AM) -- for a literal clock/timetable display
+// rather than a spoken-style label.
+export function minToClock(mins){ mins=((mins%1440)+1440)%1440; const h=Math.floor(mins/60), m=mins%60; const ap = h<12?"AM":"PM"; let h12=h%12; if(h12===0) h12=12; return h12+":"+pad2(m)+" "+ap; }
 export function fmtMinutes(mins){ if(mins<60) return mins+" min"; const h=Math.floor(mins/60), m=mins%60; return h+"h"+(m? " "+m+"m":""); }
 export function todayIdx(){ return (new Date().getDay()+6)%7; }
 export function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }

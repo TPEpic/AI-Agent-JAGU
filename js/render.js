@@ -1,4 +1,4 @@
-import { $, $$, daysUntil, esc, fmtMinutes, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
+import { $, $$, daysUntil, esc, fmtMinutes, minToClock, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete, dbUpdate, persist, state } from './state.js';
 import { openClassNotesModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
@@ -9,7 +9,7 @@ function goScreen(name){
   $$(".screen").forEach(s=>s.classList.remove("active"));
   $("#screen-"+name).classList.add("active");
   $$(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.screen===name));
-  if(name==="timetable") renderTimetable();
+  if(name==="timetable"){ state.selectedDay = todayIdx(); renderTimetable(); }
 }
 $$(".nav-btn").forEach(b=> b.addEventListener("click", ()=>goScreen(b.dataset.screen)));
 $("#home-avatar").addEventListener("click", ()=> goScreen("settings"));
@@ -22,7 +22,7 @@ function todaysEntries(){
 }
 
 // ── WORK-DAY / TEACHING-LOAD STATS (Dashboard) ──
-const WORK_START_MIN = 9*60, WORK_END_MIN = 17*60;
+export const WORK_START_MIN = 9*60, WORK_END_MIN = 17*60;
 function overlapMinutes(startMin, endMin, winStart, winEnd){
   return Math.max(0, Math.min(endMin, winEnd) - Math.max(startMin, winStart));
 }
@@ -42,7 +42,7 @@ function computeTeachingStats(){
 
 function ttRowHtml(e){
   const hasNotes = !!(e.notes && e.notes.trim());
-  return '<div class="tt-row"><div class="tt-time">'+e.start+'<span class="tt-end">'+e.end+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
+  return '<div class="tt-row"><div class="tt-time">'+minToClock(timeToMin(e.start))+'<span class="tt-end">'+minToClock(timeToMin(e.end))+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
     + (hasNotes?'<div class="tt-note">'+esc(e.notes)+'</div>':'')
     + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin-top:6px;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
     + '</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
@@ -52,6 +52,9 @@ function wireTtRowDeletes(root){
   $$('[data-tt-note]', root).forEach(el=> el.addEventListener("click", ()=> openClassNotesModal(el.dataset.ttNote)));
 }
 
+// "Free" here always means free WITHIN the 9-5 working day -- outside
+// that window is its own before-hours/after-hours state, never counted
+// as free time to work through.
 export function computeStatus(){
   const entries = todaysEntries();
   const nm = nowMin();
@@ -59,11 +62,17 @@ export function computeStatus(){
   if(current){
     return { state:"class", current, freeMinutes:0 };
   }
+  if(nm < WORK_START_MIN){
+    return { state:"before-hours", next: entries.find(e=> timeToMin(e.start) > nm) || null, freeMinutes:0 };
+  }
+  if(nm >= WORK_END_MIN){
+    return { state:"after-hours", next:null, freeMinutes:0 };
+  }
   const next = entries.find(e=> timeToMin(e.start) > nm);
   if(next){
     return { state:"free", next, freeMinutes: timeToMin(next.start)-nm };
   }
-  return { state:"free", next:null, freeMinutes: 1440-nm };
+  return { state:"free", next:null, freeMinutes: WORK_END_MIN-nm };
 }
 
 export function greetingWord(){
@@ -85,7 +94,7 @@ export function currentTermInfo(){
 
 function updateClock(){
   const d = new Date();
-  $("#clock").textContent = pad2(d.getHours())+":"+pad2(d.getMinutes());
+  $("#clock").textContent = minToClock(d.getHours()*60+d.getMinutes());
 }
 setInterval(updateClock, 15000); updateClock();
 
@@ -116,12 +125,16 @@ function renderHomeStatus(){
   let line = "";
   if(st.state==="class"){
     line = "In "+esc(st.current.subject)+(st.current.room? " · Room "+esc(st.current.room):"")+" until "+minToLabel(timeToMin(st.current.end))+".";
+  } else if(st.state==="before-hours"){
+    line = "Working day starts at "+minToLabel(WORK_START_MIN)+(st.next? " · first class: "+esc(st.next.subject)+" at "+minToLabel(timeToMin(st.next.start)):"")+".";
+  } else if(st.state==="after-hours"){
+    line = "Working day ended at "+minToLabel(WORK_END_MIN)+".";
   } else if(st.next){
     line = "Free for "+fmtMinutes(st.freeMinutes)+" · next: "+esc(st.next.subject)+" at "+minToLabel(timeToMin(st.next.start))+".";
   } else if(state.timetable.length===0){
     line = "No timetable added yet — add your classes so I can spot free time.";
   } else {
-    line = "Free for the rest of the day.";
+    line = "Free for the rest of the working day.";
   }
   $("#status-line").textContent = line;
 
@@ -204,7 +217,7 @@ export function pickFallbackTask(freeMinutes){
 function renderSuggestion(){
   const st = computeStatus();
   const box = $("#quick-suggestion");
-  if(st.state==="class"){ box.classList.add("hidden"); return; }
+  if(st.state!=="free"){ box.classList.add("hidden"); return; }
   const pick = pickFallbackTask(st.freeMinutes);
   if(!pick){ box.classList.add("hidden"); return; }
   box.classList.remove("hidden");
@@ -233,10 +246,11 @@ function renderDashboard(){
   }
 
   const stats = computeTeachingStats();
+  const workHoursLabel = minToLabel(WORK_START_MIN)+" – "+minToLabel(WORK_END_MIN);
   const statTiles = [
-    ["Work day", fmtMinutes(stats.workDayMin), "9:00 – 17:00"],
+    ["Work day", fmtMinutes(stats.workDayMin), workHoursLabel],
     ["Teaching today", stats.teachingTodayCount+(stats.teachingTodayCount===1?" class":" classes"), fmtMinutes(stats.teachingTodayMin)],
-    ["Free today", fmtMinutes(stats.freeTodayMin), "within 9:00 – 17:00"],
+    ["Free today", fmtMinutes(stats.freeTodayMin), "within "+workHoursLabel],
     ["Teaching this week", fmtMinutes(stats.teachingWeekMin), "across all days"],
   ];
   const term = currentTermInfo();
@@ -249,6 +263,10 @@ function renderDashboard(){
   let html = "";
   if(st.state==="class"){
     html += row("Now", esc(st.current.subject)+(st.current.room?" · Room "+esc(st.current.room):"")+" · until "+minToLabel(timeToMin(st.current.end)));
+  } else if(st.state==="before-hours"){
+    html += row("Today", "Working day starts at "+minToLabel(WORK_START_MIN));
+  } else if(st.state==="after-hours"){
+    html += row("Today", "Working day ended at "+minToLabel(WORK_END_MIN));
   } else {
     html += row("Free time", fmtMinutes(st.freeMinutes)+(st.next? " · until "+minToLabel(timeToMin(st.next.start)):""));
   }
