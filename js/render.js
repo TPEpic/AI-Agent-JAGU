@@ -1,6 +1,6 @@
-import { $, $$, daysUntil, esc, fmtMinutes, minToClock, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
+import { $, $$, addDaysISO, daysUntil, esc, fmtMinutes, minToClock, minToLabel, nowMin, pad2, showToast, timeToMin, todayIdx, todayISO } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete, dbUpdate, persist, state } from './state.js';
-import { openClassNotesModal, openFormModal, openTaskModal } from './modals.js';
+import { deleteEvent, openClassNotesModal, openEditEventModal, openEditTaskModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { speak } from './voice.js';
 
@@ -17,8 +17,10 @@ $("#home-avatar").addEventListener("click", ()=> goScreen("settings"));
 
 // ── TIME/STATUS LOGIC ──
 function todaysEntries(){
-  const idx = todayIdx();
-  return state.timetable.filter(e=>e.day===idx).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+  const idx = todayIdx(), iso = todayISO();
+  // A cover session only counts on its actual date; a regular recurring
+  // class (no date set) counts on its weekly weekday as before.
+  return state.timetable.filter(e=> e.date ? e.date===iso : e.day===idx).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
 }
 
 // ── WORK-DAY / TEACHING-LOAD STATS (Dashboard) ──
@@ -30,8 +32,15 @@ function computeTeachingStats(){
   const today = todaysEntries();
   let teachingTodayMin = 0;
   today.forEach(e=> teachingTodayMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  // Regular recurring classes always count; a cover session only counts
+  // toward this week's total while its date actually falls in this week --
+  // otherwise a one-off cover from months ago would inflate it forever.
+  const weekStart = addDaysISO(todayISO(), -todayIdx()), weekEnd = addDaysISO(weekStart, 6);
   let teachingWeekMin = 0;
-  state.timetable.forEach(e=> teachingWeekMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));
+  state.timetable.forEach(e=>{
+    if(e.date && (e.date<weekStart || e.date>weekEnd)) return;
+    teachingWeekMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN);
+  });
   const freeTodayMin = Math.max(0, (WORK_END_MIN-WORK_START_MIN) - teachingTodayMin);
   return {
     workDayMin: WORK_END_MIN-WORK_START_MIN,
@@ -42,7 +51,9 @@ function computeTeachingStats(){
 
 function ttRowHtml(e){
   const hasNotes = !!(e.notes && e.notes.trim());
-  return '<div class="tt-row"><div class="tt-time">'+minToClock(timeToMin(e.start))+'<span class="tt-end">'+minToClock(timeToMin(e.end))+'</span></div><div class="tt-info"><div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
+  const dateLabel = e.date ? new Date(e.date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"}) : "";
+  const coverLine = e.isCover ? '<div class="tt-cover-badge">COVER'+(dateLabel?" · "+dateLabel:"")+(e.coverFor?" · for "+esc(e.coverFor):"")+'</div>' : "";
+  return '<div class="tt-row"><div class="tt-time">'+minToClock(timeToMin(e.start))+'<span class="tt-end">'+minToClock(timeToMin(e.end))+'</span></div><div class="tt-info">'+coverLine+'<div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
     + (hasNotes?'<div class="tt-note">'+esc(e.notes)+'</div>':'')
     + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin-top:6px;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
     + '</div><span class="task-del" data-tt="'+e.id+'">✕</span></div>';
@@ -308,12 +319,32 @@ function renderDashboard(){
 function todoRowHtml(t){
   const p = projectById(t.projectId);
   const meta = (p?esc(p.name)+" · ":"")+(t.estMinutes||20)+" min";
-  return '<div class="event-row"><div><div class="event-title">'+esc(t.title)+'</div><div class="event-when">'+meta+'</div></div></div>';
+  return '<div class="event-row">'
+    + '<div style="display:flex; align-items:center; gap:11px; min-width:0;">'
+      + '<button class="task-check" data-task-check="'+t.id+'" aria-label="Mark done"></button>'
+      + '<div style="min-width:0; cursor:pointer;" data-task-edit="'+t.id+'"><div class="event-title">'+esc(t.title)+'</div><div class="event-when">'+meta+'</div></div>'
+    + '</div>'
+    + '<span class="task-del" data-task-del="'+t.id+'" title="Delete">✕</span>'
+    + '</div>';
 }
+function wireTodoRowActions(root){
+  $$('[data-task-check]', root).forEach(el=> el.addEventListener("click", ()=> toggleTask(el.dataset.taskCheck)));
+  $$('[data-task-edit]', root).forEach(el=> el.addEventListener("click", ()=> openEditTaskModal(el.dataset.taskEdit)));
+  $$('[data-task-del]', root).forEach(el=> el.addEventListener("click", ()=> deleteTask(el.dataset.taskDel)));
+}
+
 function eventRowHtml(e){
   const dleft = daysUntil(e.date);
   const when = dleft===0?"Today":dleft===1?"Tomorrow":"In "+dleft+" days";
-  return '<div class="event-row"><div><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div><div class="event-badge">'+esc(when)+'</div></div>';
+  return '<div class="event-row"><div style="cursor:pointer;" data-event-edit="'+e.id+'"><div class="event-title">'+esc(e.title)+'</div><div class="event-when">'+when+'</div></div>'
+    + '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">'
+      + '<div class="event-badge">'+esc(when)+'</div>'
+      + '<span class="task-del" data-event-del="'+e.id+'" title="Delete">✕</span>'
+    + '</div></div>';
+}
+function wireEventRowActions(root){
+  $$('[data-event-edit]', root).forEach(el=> el.addEventListener("click", ()=> openEditEventModal(el.dataset.eventEdit)));
+  $$('[data-event-del]', root).forEach(el=> el.addEventListener("click", ()=> deleteEvent(el.dataset.eventDel)));
 }
 
 // Renders one category's (work/personal) Tasks and Events panels on the
@@ -323,11 +354,13 @@ function renderCategoryPanel(category, taskSel, eventSel){
   if(taskTarget){
     const pending = allPendingTasks().filter(t=> taskCategory(t)===category).sort((a,b)=> new Date(a.createdAt||0)-new Date(b.createdAt||0));
     taskTarget.innerHTML = pending.length ? pending.map(todoRowHtml).join("") : '<div class="empty-sub">Nothing to do.</div>';
+    wireTodoRowActions(taskTarget);
   }
   const eventTarget = $(eventSel);
   if(eventTarget){
     const upcoming = state.events.filter(e=> daysUntil(e.date)>=0 && (e.category==="personal"?"personal":"work")===category).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date));
     eventTarget.innerHTML = upcoming.length ? upcoming.map(eventRowHtml).join("") : '<div class="empty-sub">No upcoming events.</div>';
+    wireEventRowActions(eventTarget);
   }
 }
 
@@ -413,6 +446,7 @@ function renderLearning(){
   $$('[data-del-project]', list).forEach(el=> el.addEventListener("click", ()=> confirmDeleteProject(el.dataset.delProject)));
   $$('.task-check', list).forEach(el=> el.addEventListener("click", ()=> toggleTask(el.dataset.task)));
   $$('.task-del', list).forEach(el=> el.addEventListener("click", ()=> deleteTask(el.dataset.task)));
+  $$('[data-task-edit]', list).forEach(el=> el.addEventListener("click", ()=> openEditTaskModal(el.dataset.taskEdit)));
   $$('.note-del', list).forEach(el=> el.addEventListener("click", ()=> deleteNote(el.dataset.note)));
 }
 
@@ -437,7 +471,7 @@ function taskRowHtml(t){
   const done = t.status==="done";
   return '<div class="task-row">'
     + '<button class="task-check '+(done?"done":"")+'" data-task="'+t.id+'">'+(done?"✓":"")+'</button>'
-    + '<span class="task-title '+(done?"done":"")+'">'+esc(t.title)+'</span>'
+    + '<span class="task-title '+(done?"done":"")+'" data-task-edit="'+t.id+'" style="cursor:pointer;">'+esc(t.title)+'</span>'
     + '<span class="task-min">'+(t.estMinutes||20)+'m</span>'
     + '<span class="task-del" data-task="'+t.id+'">✕</span>'
     + '</div>';
@@ -467,7 +501,9 @@ function renderTimetable(){
   tabs.innerHTML = DAY_NAMES.map((d,i)=> '<button class="day-tab '+(i===state.selectedDay?"active":"")+'" data-day="'+i+'">'+d+'</button>').join("");
   $$(".day-tab", tabs).forEach(b=> b.addEventListener("click", ()=>{ state.selectedDay = Number(b.dataset.day); renderTimetable(); }));
 
-  const entries = state.timetable.filter(e=>e.day===state.selectedDay).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+  // A past cover session drops off the weekday view on its own once its
+  // date has gone by, so old one-off cover slots don't linger forever.
+  const entries = state.timetable.filter(e=> e.day===state.selectedDay && (!e.date || e.date>=todayISO())).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
   const list = $("#timetable-list");
   list.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
   wireTtRowDeletes(list);

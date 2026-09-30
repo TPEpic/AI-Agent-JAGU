@@ -1,4 +1,4 @@
-import { $, esc, showToast } from './helpers.js';
+import { $, addDaysISO, dateToDayIdx, esc, showToast, todayISO } from './helpers.js';
 import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 
 // ── GENERIC FORM MODAL ──
@@ -6,7 +6,7 @@ export function openFormModal(title, fields, onSubmit, submitLabel){
   const root = $("#modal-root");
   const fieldsHtml = fields.map(f=>{
     if(f.type==="select"){
-      return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><select class="text-field" name="'+f.name+'">'+f.options.map(o=>'<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>').join("")+'</select></div>';
+      return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><select class="text-field" name="'+f.name+'">'+f.options.map(o=>'<option value="'+esc(o[0])+'" '+(f.value!=null && String(f.value)===String(o[0])?"selected":"")+'>'+esc(o[1])+'</option>').join("")+'</select></div>';
     }
     if(f.type==="textarea"){
       return '<div class="field-group"><label class="field-label">'+esc(f.label)+'</label><textarea class="text-field" name="'+f.name+'" rows="'+(f.rows||3)+'" style="resize:vertical; font-family:inherit;" '+(f.placeholder?'placeholder="'+esc(f.placeholder)+'"':'')+'>'+(f.value!=null?esc(f.value):'')+'</textarea></div>';
@@ -54,6 +54,20 @@ export function openTaskModal(projectId){
   }, "Add task");
 }
 
+export function openEditTaskModal(taskId){
+  const t = state.tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  openFormModal("Edit task", [
+    {name:"title", label:"Task", value:t.title},
+    {name:"estMinutes", label:"Estimated minutes", type:"number", value:t.estMinutes||20},
+    {name:"category", label:"Category", type:"select", value:t.category==="personal"?"personal":"work", options:[["work","Work"],["personal","Personal"]]},
+  ], async (data)=>{
+    if(!data.title) return;
+    await dbUpdate("tasks", taskId, {title:data.title, estMinutes:Number(data.estMinutes)||20, category:data.category==="personal"?"personal":"work"});
+    showToast("Task updated");
+  }, "Save");
+}
+
 function openTimetableModal(){
   openFormModal("Add class", [
     {name:"day", label:"Day", type:"select", options: DAY_LABELS.map((d,i)=>[String(i),d])},
@@ -67,6 +81,34 @@ function openTimetableModal(){
     await dbAdd("timetable", {day:Number(data.day), start:data.start, end:data.end, subject:data.subject, room:data.room||null, notes:data.notes||null});
     showToast("Class added");
   }, "Add");
+}
+
+function openCoverModal(){
+  openFormModal("Add cover session", [
+    {name:"subject", label:"Class / subject", placeholder:"e.g. Cover for Mr Smith — Y10 Computing"},
+    {name:"coverFor", label:"Covering for (optional)", placeholder:"e.g. Mr Smith"},
+    {name:"room", label:"Room (optional)", placeholder:"e.g. B105"},
+    {name:"startDate", label:"Date", type:"date", value:todayISO()},
+    {name:"endDate", label:"Last day (optional — leave blank for a single day)", type:"date"},
+    {name:"start", label:"Start time", type:"time"},
+    {name:"end", label:"End time", type:"time"},
+    {name:"notes", label:"Notes (optional)", type:"textarea", placeholder:"e.g. Seating plan on their desk, cover work in the shared drive..."},
+  ], async (data)=>{
+    if(!data.subject || !data.startDate || !data.start || !data.end) return;
+    const endDate = data.endDate || data.startDate;
+    if(endDate < data.startDate){ showToast("Last day is before the start date.","error"); return; }
+    let count = 0;
+    for(let d = data.startDate; d <= endDate; d = addDaysISO(d,1)){
+      await dbAdd("timetable", {
+        day: dateToDayIdx(d), date: d, start:data.start, end:data.end,
+        subject:data.subject, room:data.room||null, notes:data.notes||null,
+        isCover:true, coverFor:data.coverFor||null,
+      });
+      count++;
+      if(count>60) break; // sanity cap
+    }
+    showToast("Cover added for "+count+" day"+(count===1?"":"s"));
+  }, "Add cover");
 }
 
 export function openClassNotesModal(classId){
@@ -140,6 +182,25 @@ function openEventModal(){
   }, "Add");
 }
 
+export function openEditEventModal(eventId){
+  const e = state.events.find(x=>x.id===eventId);
+  if(!e) return;
+  openFormModal("Edit event", [
+    {name:"title", label:"Event", value:e.title},
+    {name:"date", label:"Date", type:"date", value:e.date},
+    {name:"category", label:"Category", type:"select", value:e.category==="personal"?"personal":"work", options:[["work","Work"],["personal","Personal"]]},
+  ], async (data)=>{
+    if(!data.title || !data.date) return;
+    await dbUpdate("events", eventId, {title:data.title, date:data.date, category:data.category==="personal"?"personal":"work"});
+    showToast("Event updated");
+  }, "Save");
+}
+
+export async function deleteEvent(eventId){
+  if(!confirm("Delete this event?")) return;
+  await dbDelete("events", eventId);
+}
+
 function openMarkingModal(){
   openFormModal("New marking batch", [
     {name:"className", label:"Class / group", placeholder:"e.g. Y11 T Level DSS"},
@@ -169,6 +230,7 @@ function openTermModal(){
 $("#add-project-btn").addEventListener("click", openProjectModal);
 $("#add-timetable-btn").addEventListener("click", openTimetableModal);
 $("#import-timetable-btn").addEventListener("click", openImportModal);
+$("#add-cover-btn").addEventListener("click", openCoverModal);
 $("#add-event-btn").addEventListener("click", openEventModal);
 $("#add-marking-btn").addEventListener("click", openMarkingModal);
 $("#add-term-btn").addEventListener("click", openTermModal);

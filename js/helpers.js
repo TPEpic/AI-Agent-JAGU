@@ -15,6 +15,9 @@ export function uid(){ return Math.random().toString(36).slice(2,10); }
 export function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 export function daysUntil(dateStr){ const d=new Date(dateStr+"T00:00:00"); const t=new Date(); t.setHours(0,0,0,0); return Math.round((d-t)/86400000); }
 export function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+export function dateToDayIdx(dateStr){ return (new Date(dateStr+"T00:00:00").getDay()+6)%7; }
+export function dateToISO(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+export function addDaysISO(dateStr, n){ const d = new Date(dateStr+"T00:00:00"); d.setDate(d.getDate()+n); return dateToISO(d); }
 
 export function showToast(msg, type){
   const root = $("#toast-root");
