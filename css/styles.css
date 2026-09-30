@@ -228,9 +228,15 @@ button{cursor:pointer; background:none; border:none;}
   .dash-columns{ flex-direction:row; }
   .dash-columns > .category-panel{ flex:1; min-width:0; }
 }
-.stat-tile{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
+.stat-tile{ background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
 .stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
 .stat-label{ font-size:11px; color:var(--text-dim); margin-top:3px; line-height:1.35; }
+/* Give each stat tile its own tint so the row reads as distinct facts,
+   not one repeated white block. */
+#dash-stats .stat-tile:nth-child(4n+1){ border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(4n+2){ border-left-color:var(--amber); background:color-mix(in srgb, var(--amber) 22%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(4n+3){ border-left-color:var(--violet); background:color-mix(in srgb, var(--violet) 8%, var(--surface)); }
+#dash-stats .stat-tile:nth-child(4n+4){ border-left-color:var(--accent-2); background:color-mix(in srgb, var(--accent-2) 6%, var(--surface)); }
 
 .event-group-label{ font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; }
 .event-group-label:first-child{ margin-top:0; }
@@ -246,6 +252,14 @@ button{cursor:pointer; background:none; border:none;}
 .today-row:last-child{ border-bottom:none; }
 .today-row .label{ color:var(--text-faint); font-family:var(--font-b); font-size:13px; padding-top:2px; }
 .today-row .val{ text-align:left; max-width:66%; font-weight:500; color:var(--text); }
+/* The first row is always the live status (Now / Today / Free time) --
+   call it out so it doesn't blend into the plain rows below it. */
+.today-row:first-child{
+  background:color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-bottom:none; border-radius:var(--radius-s);
+  padding:10px 12px; margin-bottom:2px;
+}
+.today-row:first-child .label{ color:var(--accent); font-weight:700; }
 
 .proj-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:20px; }
 .proj-top{ display:flex; justify-content:space-between; align-items:baseline; }
@@ -318,12 +332,14 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .topbar-nav{ display:none; }
 @media (min-width:721px){
   #bottom-nav{ display:none; }
-  .topbar-nav{ display:flex; align-items:center; gap:2px; }
+  #topbar{ display:grid; grid-template-columns:1fr auto 1fr; }
+  #topbar-title{ justify-self:start; }
+  .topbar-nav{ display:flex; align-items:center; justify-self:center; gap:2px; }
   .topbar-nav .nav-btn{ flex-direction:row; gap:0; padding:7px 13px; border-radius:99px; color:var(--text-dim); }
   .topbar-nav .nav-btn svg{ display:none; }
   .topbar-nav .nav-btn span{ font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
   .topbar-nav .nav-btn.active{ background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); }
-  #topbar-right{ margin-left:auto; }
+  #topbar-right{ justify-self:end; margin-left:0; }
   #screens{ padding-bottom:24px; }
 }
 
