@@ -420,16 +420,20 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .icon-key-icon{ width:20px; text-align:center; flex-shrink:0; font-size:14px; }
 .important-chip{ font-size:12.5px; font-weight:700; padding:7px 13px; border-radius:99px; background:color-mix(in srgb, var(--danger) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--danger) 24%, var(--border)); color:var(--text); }
 
+.learner-group-header{ display:flex; align-items:center; gap:10px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding-top:6px; }
+.learner-group-divider{ flex:1; height:1px; background:currentColor; opacity:.3; }
+
 .progress-grid{ overflow-x:auto; padding-bottom:4px; }
 .progress-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); }
 .progress-row:last-child{ border-bottom:none; }
-.progress-row-name{ width:120px; flex-shrink:0; font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.progress-row-pct{ font-weight:400; color:var(--text-faint); font-size:11px; }
+.progress-row-name{ width:140px; flex-shrink:0; display:flex; align-items:center; font-size:12.5px; font-weight:600; color:var(--text); }
+.progress-row-name-text{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.progress-row-pct{ flex-shrink:0; margin-left:4px; font-weight:400; color:var(--text-faint); font-size:11px; }
 .progress-row-cells{ display:flex; gap:6px; }
 .progress-cell{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface-2); border:1px solid var(--border); font-size:15px; display:flex; align-items:center; justify-content:center; }
 .progress-task-label{ width:34px; flex-shrink:0; font-size:9px; color:var(--text-faint); text-align:center; line-height:1.2; overflow:hidden; }
 .progress-legend{ display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); font-size:12px; color:var(--text-dim); }
-.rag-dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
+.rag-dot{ display:inline-block; width:11px; height:11px; border-radius:50%; flex-shrink:0; vertical-align:middle; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
 
 .highlight-row{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
 .highlight-row:last-child{ border-bottom:none; }

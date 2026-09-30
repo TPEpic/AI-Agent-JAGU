@@ -158,23 +158,42 @@ export function renderClassroom(){
   }).join("") : '<div class="empty-state">No assignments yet.</div>';
   $$('[data-assignment]', $("#classroom-assignments")).forEach(el=> el.addEventListener("click", ()=> openAssignmentDetail(el.dataset.assignment)));
 
-  // Learner roster
-  $("#classroom-learners").innerHTML = learners.length ? learners.map(l=>{
-    const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,l.id),0)/assignments.length) : 0;
+  // Learner roster — grouped into red/amber/green (plus "not started" for
+  // learners with no assignment yet) so Tahira can scan each band at once.
+  function learnerRowHtml(l, avgPct, rag){
     const active = activeHighlightsFor(l.id, classKey);
     const icons = []
       .concat(needsCheckingCountFor(l.id,classKey) ? "🔍" : [])
       .concat(active.some(h=>h.type==="warning") ? "⚠️" : [])
       .concat(active.some(h=>h.type==="task") ? "📋" : [])
       .concat(state.learnerHighlights.some(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation") ? "⭐" : []);
-    const rag = assignments.length ? ragStatus(avgPct) : null;
     const dot = rag ? '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+';" title="'+esc(rag.label)+'"></span>' : '';
     return '<div class="event-row" data-learner="'+l.id+'" style="cursor:pointer;">'
       + '<div style="display:flex; align-items:center; gap:9px; min-width:0;">'+dot+'<div><div class="event-title">'+esc(l.name)+'</div><div class="event-when">'+(assignments.length? avgPct+"% avg progress" : "No assignments yet")+'</div></div></div>'
       + '<div style="display:flex; align-items:center; gap:10px;"><span style="font-size:15px;">'+icons.join(" ")+'</span>'
       + '<span class="task-del" data-unenroll="'+l.id+'" title="Remove from class">✕</span></div>'
       + '</div>';
-  }).join("") : '<div class="empty-state">No learners yet. Add one to get started.</div>';
+  }
+  if(!learners.length){
+    $("#classroom-learners").innerHTML = '<div class="empty-state">No learners yet. Add one to get started.</div>';
+  } else {
+    const groups = { red:[], amber:[], green:[], none:[] };
+    learners.forEach(l=>{
+      const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,l.id),0)/assignments.length) : null;
+      const bucket = avgPct==null ? "none" : avgPct>=80 ? "green" : avgPct>=40 ? "amber" : "red";
+      groups[bucket].push({l, avgPct});
+    });
+    const sections = [
+      {key:"red", label:"Well behind", color:"var(--rag-red)"},
+      {key:"amber", label:"Behind", color:"var(--rag-amber)"},
+      {key:"green", label:"On track", color:"var(--rag-green)"},
+      {key:"none", label:"No assignments yet", color:"var(--text-faint)"},
+    ];
+    $("#classroom-learners").innerHTML = sections.filter(s=>groups[s.key].length).map(s=>{
+      const rows = groups[s.key].map(({l,avgPct})=> learnerRowHtml(l, avgPct, avgPct==null?null:ragStatus(avgPct))).join("");
+      return '<div class="learner-group-header" style="color:'+s.color+';"><span>'+s.label+' ('+groups[s.key].length+')</span><span class="learner-group-divider"></span></div>'+rows;
+    }).join("");
+  }
   $$('[data-learner]', $("#classroom-learners")).forEach(el=> el.addEventListener("click", (e)=>{ if(e.target.closest("[data-unenroll]")) return; openLearnerDetail(el.dataset.learner); }));
   $$('[data-unenroll]', $("#classroom-learners")).forEach(el=> el.addEventListener("click", async (e)=>{
     e.stopPropagation();
@@ -245,7 +264,9 @@ function openAssignmentDetail(assignmentId){
       return '<button class="progress-cell" data-cycle="'+l.id+'|'+t.id+'" title="'+esc(t.title)+' — '+PROGRESS_LABEL[status]+'">'+PROGRESS_ICON[status]+'</button>';
     }).join("");
     const pct = learnerAssignmentPct(a, l.id);
-    return '<div class="progress-row"><div class="progress-row-name">'+esc(l.name)+' <span class="progress-row-pct">'+pct+'%</span></div><div class="progress-row-cells">'+cells+'</div></div>';
+    const rag = ragStatus(pct);
+    const dot = '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+'; margin-right:6px;" title="'+esc(rag.label)+'"></span>';
+    return '<div class="progress-row"><div class="progress-row-name">'+dot+'<span class="progress-row-name-text">'+esc(l.name)+'</span><span class="progress-row-pct">'+pct+'%</span></div><div class="progress-row-cells">'+cells+'</div></div>';
   }).join("");
   const header = a.tasks.map(t=>'<div class="progress-task-label" title="'+esc(t.title)+'">'+esc(t.title.length>14?t.title.slice(0,13)+"…":t.title)+'</div>').join("");
   root.innerHTML = '<div class="sheet" style="max-height:92%;">'
