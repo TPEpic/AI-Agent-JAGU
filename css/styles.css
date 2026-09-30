@@ -91,6 +91,7 @@ button{cursor:pointer; background:none; border:none;}
 @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 
 .screen-title{ font-family:var(--font-d); font-size:28px; font-weight:600; margin:14px 0 18px; color:var(--text); }
+#screen-dashboard, #screen-settings{ padding-top:14px; }
 .screen-title-row{ display:flex; align-items:center; justify-content:space-between; margin:14px 0 18px; }
 .screen-title-row .screen-title{ margin:0; }
 .section-heading{ font-family:var(--font-b); font-size:12px; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; margin:26px 0 12px; padding-bottom:9px; border-bottom:2px solid var(--border-soft); }
