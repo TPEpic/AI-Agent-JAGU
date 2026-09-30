@@ -4,9 +4,9 @@
   --bg:#FAF8F4; --surface:#FFFFFF; --surface-2:#EDE9E0;
   --border:#E7E2D9; --border-soft:#EFEBE2;
   --text:#211F1C; --text-dim:#57534A; --text-faint:#8B8578; --text-muted:#B5AF9F;
-  --accent:#1F4D3F; --accent-2:#163A2F; --accent-ink:#FAF8F4;
-  --violet:#A66A1E; --violet-ink:#F6EEE0;
-  --amber:#A66A1E; --amber-ink:#F6EEE0; --danger:#B3432F; --danger-ink:#FBEAE5;
+  --accent:#374785; --accent-2:#24305E; --accent-ink:#FAF8F4;
+  --violet:#F76C6C; --violet-ink:color-mix(in srgb, #F76C6C 14%, white);
+  --amber:#A8D0E6; --amber-ink:#F8E9A1; --danger:#B3432F; --danger-ink:#FBEAE5;
   --radius-s:10px; --radius-m:16px; --radius-l:22px;
   --font-d:'Newsreader',Georgia,serif; --font-b:'Public Sans',Arial,sans-serif; --font-m:'Public Sans',Arial,sans-serif;
   --shadow: 0 12px 32px rgba(43,36,26,.10);
@@ -73,15 +73,15 @@ button{cursor:pointer; background:none; border:none;}
 
 .frame-banner{
   margin:0 20px 6px; padding:10px 14px; border-radius:var(--radius-s);
-  background:var(--amber-ink); border:1px solid color-mix(in srgb, var(--amber) 35%, transparent);
-  color:#8A5417; font-size:12.5px; display:flex; flex-direction:column; gap:8px; flex-shrink:0;
+  background:var(--amber-ink); border:1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  color:var(--accent-2); font-size:12.5px; display:flex; flex-direction:column; gap:8px; flex-shrink:0;
 }
 .frame-banner-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .frame-url{
-  flex:1; min-width:0; background:#FFFFFF; border:1px solid color-mix(in srgb, var(--amber) 30%, transparent);
-  color:#8A5417; font-family:var(--font-b); font-size:11px; padding:7px 9px; border-radius:8px;
+  flex:1; min-width:0; background:#FFFFFF; border:1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  color:var(--accent-2); font-family:var(--font-b); font-size:11px; padding:7px 9px; border-radius:8px;
 }
-.btn-tiny{ background:var(--amber); color:var(--amber-ink); font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:99px; white-space:nowrap; flex-shrink:0; text-decoration:none; display:inline-block; }
+.btn-tiny{ background:var(--accent-2); color:var(--accent-ink); font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:99px; white-space:nowrap; flex-shrink:0; text-decoration:none; display:inline-block; }
 
 #screens{ flex:1; overflow-y:auto; padding:4px 24px 100px; scrollbar-width:none; }
 #screens::-webkit-scrollbar{ display:none; }
@@ -246,7 +246,7 @@ button{cursor:pointer; background:none; border:none;}
 .event-row{ display:flex; justify-content:space-between; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:15px 18px; }
 .event-title{ font-size:14px; font-weight:600; color:var(--text); }
 .event-when{ font-size:12.5px; color:var(--text-faint); margin-top:2px; }
-.event-badge{ font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:99px; background:var(--amber-ink); color:var(--amber); white-space:nowrap; }
+.event-badge{ font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:99px; background:var(--amber-ink); color:color-mix(in srgb, var(--amber) 55%, var(--accent-2)); white-space:nowrap; }
 
 .day-tabs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
 .day-tab{ flex-shrink:0; padding:8px 15px; border-radius:99px; font-size:12.5px; font-weight:600; background:transparent; border:1px solid var(--border); color:var(--text-faint); }
