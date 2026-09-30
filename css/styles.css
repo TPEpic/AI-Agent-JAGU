@@ -390,7 +390,10 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .timer-controls{ display:flex; gap:10px; justify-content:center; margin-top:28px; }
 .timer-controls button{ padding:13px 22px; border-radius:99px; font-weight:600; font-size:14px; }
 
-.toast-root{ position:absolute; left:0; right:0; top:14px; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:60; pointer-events:none; }
+/* Sits below the topbar (73px tall) so a toast -- e.g. the "tap
+   anywhere to hear JAGU" hint that fires on startup -- never covers
+   the logo or nav tabs. */
+.toast-root{ position:absolute; left:0; right:0; top:87px; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:60; pointer-events:none; }
 .toast{ background:var(--text); color:var(--bg); border:1px solid var(--text); padding:11px 18px; border-radius:99px; font-size:13px; box-shadow:var(--shadow); max-width:88%; text-align:center; }
 
 .scan-preview{ width:100%; border-radius:var(--radius-m); margin-bottom:14px; max-height:180px; object-fit:cover; }
