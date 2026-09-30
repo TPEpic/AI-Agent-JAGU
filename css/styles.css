@@ -119,14 +119,33 @@ button{cursor:pointer; background:none; border:none;}
   background:var(--accent); box-shadow:0 10px 26px color-mix(in srgb, var(--accent) 30%, transparent);
   transition:transform .25s ease, box-shadow .25s ease;
 }
-.orb svg{ width:30px; height:30px; position:relative; z-index:1; }
+.orb-face{ position:absolute; left:50%; top:9px; transform:translateX(-50%); z-index:1; }
+.orb-bar{ transform-box:fill-box; transform-origin:50% 100%; }
 .orb.state-idle{ animation:breathe 4s ease-in-out infinite; }
 @keyframes breathe{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.035);} }
 .orb.state-listening{ transform:scale(1.06); box-shadow:0 12px 32px color-mix(in srgb, var(--accent) 42%, transparent); }
+.orb.state-listening .orb-bar{ animation:barListen .6s ease-in-out infinite; }
+.orb.state-listening .orb-bar:nth-child(1){ animation-duration:.55s; animation-delay:0s; }
+.orb.state-listening .orb-bar:nth-child(2){ animation-duration:.7s; animation-delay:.08s; }
+.orb.state-listening .orb-bar:nth-child(3){ animation-duration:.65s; animation-delay:.16s; }
+.orb.state-listening .orb-bar:nth-child(4){ animation-duration:.5s; animation-delay:.05s; }
+@keyframes barListen{ 0%,100%{ transform:scaleY(.55);} 50%{ transform:scaleY(1.25);} }
 .orb.state-thinking{ animation:pulseThink 1s ease-in-out infinite; }
 @keyframes pulseThink{ 0%,100%{ opacity:1;} 50%{ opacity:.6;} }
+.orb.state-thinking .orb-bar{ animation:barThink 1.3s ease-in-out infinite; }
+.orb.state-thinking .orb-bar:nth-child(1){ animation-delay:0s; }
+.orb.state-thinking .orb-bar:nth-child(2){ animation-delay:.15s; }
+.orb.state-thinking .orb-bar:nth-child(3){ animation-delay:.3s; }
+.orb.state-thinking .orb-bar:nth-child(4){ animation-delay:.45s; }
+@keyframes barThink{ 0%,100%{ transform:scaleY(.7);} 50%{ transform:scaleY(1.05);} }
 .orb.state-speaking{ animation:speak .5s ease-in-out infinite alternate; }
 @keyframes speak{ from{ transform:scale(1.0);} to{ transform:scale(1.08);} }
+.orb.state-speaking .orb-bar{ animation:barSpeak .4s ease-in-out infinite; }
+.orb.state-speaking .orb-bar:nth-child(1){ animation-duration:.38s; animation-delay:0s; }
+.orb.state-speaking .orb-bar:nth-child(2){ animation-duration:.46s; animation-delay:.06s; }
+.orb.state-speaking .orb-bar:nth-child(3){ animation-duration:.42s; animation-delay:.12s; }
+.orb.state-speaking .orb-bar:nth-child(4){ animation-duration:.35s; animation-delay:.03s; }
+@keyframes barSpeak{ 0%,100%{ transform:scaleY(.5);} 50%{ transform:scaleY(1.4);} }
 
 .orb-caption{ margin-top:13px; font-size:11px; font-weight:600; color:var(--text-faint); font-family:var(--font-b); letter-spacing:.09em; text-transform:uppercase; }
 
