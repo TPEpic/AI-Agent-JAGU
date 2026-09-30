@@ -10,7 +10,8 @@
   --radius-s:10px; --radius-m:16px; --radius-l:22px;
   --font-d:'Newsreader',Georgia,serif; --font-b:'Public Sans',Arial,sans-serif; --font-m:'Public Sans',Arial,sans-serif;
   --shadow: 0 12px 32px rgba(43,36,26,.10);
-  --content-max: 720px;
+  --content-max: 1040px;
+  --narrow-max: 640px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
@@ -42,6 +43,10 @@ button{cursor:pointer; background:none; border:none;}
   #topbar, #screens, .frame-banner{ max-width:var(--content-max); width:100%; margin-left:auto; margin-right:auto; }
   .nav-inner{ max-width:var(--content-max); }
 }
+/* Only the Dashboard uses the full widened shell (for its two-column
+   layout) -- the other, more text/list-heavy screens stay at a
+   comfortable reading width even on a wide desktop window. */
+.narrow-col{ max-width:var(--narrow-max); margin-left:auto; margin-right:auto; }
 
 .hud-readout{ font-family:var(--font-b); font-size:.93em; background:var(--surface-2); color:var(--text-dim); padding:1px 6px; border-radius:6px; }
 
@@ -87,7 +92,7 @@ button{cursor:pointer; background:none; border:none;}
 .screen-title{ font-family:var(--font-d); font-size:28px; font-weight:600; margin:14px 0 18px; color:var(--text); }
 .screen-title-row{ display:flex; align-items:center; justify-content:space-between; margin:14px 0 18px; }
 .screen-title-row .screen-title{ margin:0; }
-.section-heading{ font-family:var(--font-b); font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.09em; margin:26px 0 12px; }
+.section-heading{ font-family:var(--font-b); font-size:12px; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; margin:26px 0 12px; padding-bottom:9px; border-bottom:2px solid var(--border-soft); }
 .row-gap{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 
 /* ============================= HOME ============================= */
@@ -177,6 +182,24 @@ button{cursor:pointer; background:none; border:none;}
 /* ============================= STAT GRID ============================= */
 .stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:22px; }
 @media (min-width:520px){ .stat-grid{ grid-template-columns:repeat(4,1fr); } }
+
+/* ============================= DASHBOARD LAYOUT ============================= */
+.dash-layout{ display:flex; flex-direction:column; gap:20px; }
+.dash-side{ display:flex; flex-direction:column; gap:16px; }
+.dash-main{ display:flex; flex-direction:column; gap:20px; min-width:0; }
+@media (min-width:860px){
+  .dash-layout{ flex-direction:row; align-items:flex-start; gap:28px; }
+  .dash-side{ flex:0 0 260px; position:sticky; top:14px; }
+  .dash-side .stat-grid{ grid-template-columns:1fr; margin-bottom:0; }
+  .dash-main{ flex:1; }
+}
+.dash-panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:20px; }
+.dash-panel > .section-heading:first-child{ margin-top:0; }
+.dash-columns{ display:flex; flex-direction:column; gap:16px; }
+@media (min-width:980px){
+  .dash-columns{ flex-direction:row; }
+  .dash-columns > .category-panel{ flex:1; min-width:0; }
+}
 .stat-tile{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; }
 .stat-value{ font-family:var(--font-b); font-weight:700; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
 .stat-label{ font-size:11px; color:var(--text-faint); margin-top:3px; line-height:1.35; }

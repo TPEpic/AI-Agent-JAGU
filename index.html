@@ -37,7 +37,7 @@
   <main id="screens">
 
     <!-- HOME -->
-    <section id="screen-home" class="screen active">
+    <section id="screen-home" class="screen narrow-col active">
       <div class="greeting">
         <div class="greeting-row">
           <button id="home-avatar" class="avatar home-avatar" aria-label="Open Settings"></button>
@@ -75,44 +75,64 @@
     <section id="screen-dashboard" class="screen">
       <h1 class="screen-title">Dashboard</h1>
       <div id="dash-profile" class="profile-card hidden"></div>
-      <div id="dash-stats" class="stat-grid"></div>
-      <div class="card" id="today-card"></div>
-      <h2 class="section-heading">Today's classes</h2>
-      <div id="today-classes-list" class="stack"></div>
-      <div class="screen-title-row" style="margin:26px 0 12px;">
-        <h2 class="section-heading" style="margin:0;">Marking queue</h2>
-        <button id="add-marking-btn" class="btn-small">+ Add</button>
-      </div>
-      <div id="marking-list" class="stack"></div>
-      <h2 class="section-heading">Learning progress</h2>
-      <div id="progress-list" class="stack"></div>
 
-      <div class="row-gap" style="justify-content:flex-end; margin:26px 0 4px;">
-        <button id="add-event-btn" class="btn-small ghost">+ Add event</button>
-      </div>
+      <div class="dash-layout">
+        <div class="dash-side">
+          <div id="dash-stats" class="stat-grid"></div>
+          <div class="card" id="today-card"></div>
+        </div>
 
-      <h2 class="section-heading" style="margin-top:8px;">Work</h2>
-      <div class="category-panel work">
-        <div class="category-subhead">Tasks</div>
-        <div id="work-todo-list" class="stack"></div>
-        <div class="category-subhead">Events</div>
-        <div id="work-events-list" class="stack"></div>
-      </div>
+        <div class="dash-main">
+          <div class="dash-panel">
+            <h2 class="section-heading">Today's classes</h2>
+            <div id="today-classes-list" class="stack"></div>
+          </div>
 
-      <h2 class="section-heading">Personal</h2>
-      <div class="category-panel personal">
-        <div class="category-subhead">Tasks</div>
-        <div id="personal-todo-list" class="stack"></div>
-        <div class="category-subhead">Events</div>
-        <div id="personal-events-list" class="stack"></div>
-      </div>
+          <div class="dash-panel">
+            <div class="screen-title-row" style="margin:0 0 12px;">
+              <h2 class="section-heading" style="margin:0;">Marking queue</h2>
+              <button id="add-marking-btn" class="btn-small">+ Add</button>
+            </div>
+            <div id="marking-list" class="stack"></div>
+          </div>
 
-      <h2 class="section-heading">Recent notes</h2>
-      <div id="dash-notes" class="card"></div>
+          <div class="dash-panel">
+            <h2 class="section-heading">Learning progress</h2>
+            <div id="progress-list" class="stack"></div>
+          </div>
+
+          <div class="row-gap" style="justify-content:flex-end; margin:4px 0 -6px;">
+            <button id="add-event-btn" class="btn-small ghost">+ Add event</button>
+          </div>
+
+          <div class="dash-columns">
+            <div class="dash-panel category-panel work">
+              <h2 class="section-heading" style="margin-top:0;">Work</h2>
+              <div class="category-subhead">Tasks</div>
+              <div id="work-todo-list" class="stack"></div>
+              <div class="category-subhead">Events</div>
+              <div id="work-events-list" class="stack"></div>
+            </div>
+
+            <div class="dash-panel category-panel personal">
+              <h2 class="section-heading" style="margin-top:0;">Personal</h2>
+              <div class="category-subhead">Tasks</div>
+              <div id="personal-todo-list" class="stack"></div>
+              <div class="category-subhead">Events</div>
+              <div id="personal-events-list" class="stack"></div>
+            </div>
+          </div>
+
+          <div class="dash-panel">
+            <h2 class="section-heading">Recent notes</h2>
+            <div id="dash-notes" class="card" style="border:none; padding:0;"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- LEARNING -->
-    <section id="screen-learning" class="screen">
+    <section id="screen-learning" class="screen narrow-col">
       <div class="screen-title-row">
         <h1 class="screen-title">Learning</h1>
         <button id="add-project-btn" class="btn-small">+ New</button>
@@ -121,7 +141,7 @@
     </section>
 
     <!-- TIMETABLE -->
-    <section id="screen-timetable" class="screen">
+    <section id="screen-timetable" class="screen narrow-col">
       <div class="screen-title-row">
         <h1 class="screen-title">Timetable</h1>
         <div class="row-gap">
@@ -136,7 +156,7 @@
     </section>
 
     <!-- SETTINGS -->
-    <section id="screen-settings" class="screen">
+    <section id="screen-settings" class="screen narrow-col">
       <h1 class="screen-title">Settings</h1>
 
       <div class="field-group" style="display:flex; align-items:center; gap:16px;">
