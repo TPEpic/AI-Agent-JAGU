@@ -1,4 +1,4 @@
-import { $, $$, esc, minToClock, showToast, timeToMin } from './helpers.js';
+import { $, $$, esc, minToClock, showToast, timeToMin, todayIdx, uid } from './helpers.js';
 import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 import { openFormModal, closeModal } from './modals.js';
 
@@ -217,17 +217,22 @@ function openAssignmentDetail(assignmentId){
 
 // ── LEARNERS ──
 function openAddLearnerModal(classKey){
-  openFormModal("Add learner", [
-    {name:"name", label:"Learner name", placeholder:"e.g. Oliver Thompson"},
+  openFormModal("Add learners", [
+    {name:"names", label:"Learner names — one per line", type:"textarea", rows:6, placeholder:"Oliver Thompson\nAmelia Robinson\nNoah Mitchell\n..."},
   ], async (data)=>{
-    if(!data.name) return;
-    let learner = state.learners.find(l=> !l.archived && l.name.trim().toLowerCase()===data.name.trim().toLowerCase());
-    let learnerId = learner ? learner.id : null;
-    if(!learnerId) learnerId = await dbAdd("learners", {name:data.name, archived:false});
-    const already = state.enrollments.some(e=>e.learnerId===learnerId && e.classKey===classKey);
-    if(already){ showToast(data.name+" is already in this class."); return; }
-    await dbAdd("enrollments", {learnerId, classKey});
-    showToast(data.name+" added to the class");
+    const names = data.names.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(!names.length) return;
+    let added = 0, skipped = 0;
+    for(const name of names){
+      let learner = state.learners.find(l=> !l.archived && l.name.trim().toLowerCase()===name.toLowerCase());
+      let learnerId = learner ? learner.id : null;
+      if(!learnerId) learnerId = await dbAdd("learners", {name, archived:false});
+      const already = state.enrollments.some(e=>e.learnerId===learnerId && e.classKey===classKey);
+      if(already){ skipped++; continue; }
+      await dbAdd("enrollments", {learnerId, classKey});
+      added++;
+    }
+    showToast(added+" learner"+(added===1?"":"s")+" added"+(skipped?" ("+skipped+" already in this class)":""));
   }, "Add");
 }
 
@@ -319,8 +324,65 @@ function openClassNoteModal(classKey){
   }, "Save");
 }
 
+// ── SAMPLE DATA (for trying the feature out) ──
+const DEMO_SUBJECT = "Demo — Level 3 Computing — Unit 4 Programming";
+async function seedDemoClass(){
+  const classKey = classKeyFor(DEMO_SUBJECT);
+  const alreadySeeded = state.timetable.some(t=> classKeyFor(t.subject)===classKey);
+  if(alreadySeeded){ openClassWorkspace(classKey); return; }
+
+  await dbAdd("timetable", {day: todayIdx(), start:"09:00", end:"10:00", subject:DEMO_SUBJECT, room:"Demo Room"});
+
+  const names = ["Oliver Thompson","Amelia Robinson","Noah Mitchell","Sophie Walker","George Turner"];
+  const learnerIds = {};
+  for(const name of names){
+    const id = await dbAdd("learners", {name, archived:false});
+    learnerIds[name] = id;
+    await dbAdd("enrollments", {learnerId:id, classKey});
+  }
+
+  const taskTitles = ["Research the topic","Complete worksheet","Write the program","Upload evidence","Review and correct work"];
+  const tasks = taskTitles.map(title=>({id:uid(), title}));
+  const assignmentId = await dbAdd("classAssignments", {classKey, title:"Unit 4 Programming Assignment", dueDate:null, tasks});
+
+  async function setProgress(name, taskIdx, status){
+    await dbAdd("learnerProgress", {assignmentId, learnerId:learnerIds[name], taskId:tasks[taskIdx].id, status});
+  }
+  await setProgress("Oliver Thompson", 0, "done");
+  await setProgress("Oliver Thompson", 1, "done");
+  await setProgress("Oliver Thompson", 2, "done");
+  await setProgress("Oliver Thompson", 3, "needs_checking");
+  for(let i=0;i<5;i++) await setProgress("Amelia Robinson", i, "done");
+  await setProgress("Noah Mitchell", 0, "done");
+  await setProgress("Noah Mitchell", 1, "in_progress");
+  for(let i=0;i<4;i++) await setProgress("Sophie Walker", i, "done");
+  await setProgress("Sophie Walker", 4, "needs_checking");
+  // George Turner: nothing started yet — no progress rows needed.
+
+  async function addHighlight(name, type, text, status){
+    await dbAdd("learnerHighlights", {learnerId:learnerIds[name], classKey, type, text, dueDate:null, status:status||"active"});
+  }
+  await addHighlight("Oliver Thompson", "warning", "Needs additional support with the programming section.");
+  await addHighlight("Oliver Thompson", "performance", "Improving significantly.");
+  await addHighlight("Oliver Thompson", "task", "Complete Task 3 and resubmit by Friday.");
+  await addHighlight("Amelia Robinson", "appreciation", "Excellent understanding and very strong submission.");
+  await addHighlight("Amelia Robinson", "task", "Review Unit 4 submission.", "done");
+  await addHighlight("Noah Mitchell", "warning", "Needs to complete the worksheet before moving to the programming task.");
+  await addHighlight("Noah Mitchell", "task", "Complete the worksheet before the next session.");
+  await addHighlight("Sophie Walker", "performance", "Good improvement compared with the previous session.");
+  await addHighlight("George Turner", "warning", "Assignment has not been started.");
+  await addHighlight("George Turner", "task", "Complete Task 1 before the next lesson.");
+
+  showToast("Sample class loaded — 5 learners, one assignment, a mix of highlights.");
+  openClassWorkspace(classKey);
+}
+
 // ── WIRING (static buttons that always exist in the DOM) ──
 $("#classroom-back").addEventListener("click", backToTimetable);
 $("#classroom-add-assignment").addEventListener("click", ()=> openAssignmentModal(state.selectedClassKey));
 $("#classroom-add-learner").addEventListener("click", ()=> openAddLearnerModal(state.selectedClassKey));
 $("#classroom-add-note").addEventListener("click", ()=> openClassNoteModal(state.selectedClassKey));
+const seedBtn = $("#seed-demo-class-btn");
+if(seedBtn) seedBtn.addEventListener("click", ()=>{
+  if(confirm("Add a sample class (5 fictional learners, an assignment and some highlights) so you can try out the Class Workspace?")) seedDemoClass();
+});
