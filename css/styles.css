@@ -51,7 +51,7 @@ button{cursor:pointer; background:none; border:none;}
 .hud-readout{ font-family:var(--font-b); font-size:.93em; background:var(--surface-2); color:var(--text-dim); padding:1px 6px; border-radius:6px; }
 
 #topbar{
-  display:flex; align-items:center; justify-content:space-between;
+  display:flex; align-items:center; justify-content:space-between; gap:32px;
   padding:20px 24px 14px;
   border-bottom:1px solid var(--border);
   flex-shrink:0;
