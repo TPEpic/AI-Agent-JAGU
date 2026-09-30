@@ -47,6 +47,13 @@ button{cursor:pointer; background:none; border:none;}
    layout) -- the other, more text/list-heavy screens stay at a
    comfortable reading width even on a wide desktop window. */
 .narrow-col{ max-width:var(--narrow-max); margin-left:auto; margin-right:auto; }
+/* Home is the one narrow-col screen that carries the profile pic and
+   greeting -- on a wide desktop window it should sit left, lined up
+   under the logo, instead of floating centred under the (also
+   centred) nav tabs. */
+@media (min-width:721px){
+  #screen-home.narrow-col{ margin-left:0; }
+}
 
 .hud-readout{ font-family:var(--font-b); font-size:.93em; background:var(--surface-2); color:var(--text-dim); padding:1px 6px; border-radius:6px; }
 
