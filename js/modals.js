@@ -262,6 +262,7 @@ $("#add-project-btn").addEventListener("click", openProjectModal);
 $("#add-timetable-btn").addEventListener("click", openTimetableModal);
 $("#import-timetable-btn").addEventListener("click", openImportModal);
 $("#add-cover-btn").addEventListener("click", openCoverModal);
+$("#add-dash-task-btn").addEventListener("click", ()=> openTaskModal(null));
 $("#add-event-btn").addEventListener("click", openEventModal);
 $("#add-marking-btn").addEventListener("click", openMarkingModal);
 $("#add-term-btn").addEventListener("click", openTermModal);
