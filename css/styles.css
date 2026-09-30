@@ -5,8 +5,8 @@
   --border:color-mix(in srgb, #4056A1 14%, white); --border-soft:color-mix(in srgb, #4056A1 8%, white);
   --text:#23264A; --text-dim:#55608C; --text-faint:#8D96B8; --text-muted:#BFC5DC;
   --accent:#4056A1; --accent-2:#304079; --accent-ink:#FBF6E9;
-  --violet:#D79922; --violet-ink:color-mix(in srgb, #D79922 14%, white);
-  --amber:#F13C20; --amber-ink:#C5CBE3; --danger:#B3432F; --danger-ink:#FBEAE5;
+  --violet:#F76C6C; --violet-ink:color-mix(in srgb, #F76C6C 16%, white);
+  --amber:#A8D0E6; --amber-ink:color-mix(in srgb, #A8D0E6 32%, white); --danger:#B3432F; --danger-ink:#FBEAE5;
   --radius-s:10px; --radius-m:16px; --radius-l:22px;
   --font-d:'Fraunces',Georgia,serif; --font-b:'Work Sans',Arial,sans-serif; --font-m:'Work Sans',Arial,sans-serif;
   --shadow: 0 12px 32px rgba(35,38,74,.10);
@@ -100,7 +100,7 @@ button{cursor:pointer; background:none; border:none;}
 .greeting{ padding:14px 2px 0; }
 .greeting-row{ display:flex; align-items:center; gap:12px; }
 .home-avatar{ width:48px; height:48px; font-size:18px; flex-shrink:0; }
-#greeting-text{ font-family:var(--font-d); font-style:italic; font-size:34px; font-weight:600; line-height:1.15; color:var(--accent); }
+#greeting-text{ font-family:var(--font-d); font-style:italic; font-size:34px; font-weight:600; line-height:1.15; color:var(--text); }
 .status-line{ margin-top:10px; color:var(--text-dim); font-size:14.5px; line-height:1.55; }
 .term-line{ margin-top:4px; color:var(--text-faint); font-size:12.5px; }
 
