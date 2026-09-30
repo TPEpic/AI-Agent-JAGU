@@ -138,7 +138,7 @@ button{cursor:pointer; background:none; border:none;}
 .btn-small.ghost{ background:transparent; border:1px solid var(--border); color:var(--text-dim); }
 .btn-small.danger{ background:transparent; border:1px solid var(--danger); color:var(--danger); }
 
-.transcript{ display:flex; flex-direction:column; gap:10px; min-height:40px; padding:4px 0 14px; }
+.transcript{ display:flex; flex-direction:column; gap:10px; min-height:40px; max-height:220px; overflow-y:auto; padding:4px 4px 14px; scroll-behavior:smooth; }
 .bubble{ max-width:88%; padding:11px 15px; border-radius:16px; font-size:13.5px; line-height:1.45; }
 .bubble.user{ align-self:flex-end; background:var(--accent); color:var(--accent-ink); border-radius:16px 16px 4px 16px; }
 .bubble.jagu{ align-self:flex-start; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:16px 16px 16px 4px; }
