@@ -120,6 +120,12 @@ button{cursor:pointer; background:none; border:none;}
   transition:transform .25s ease, box-shadow .25s ease;
 }
 .orb-face{ position:absolute; left:50%; top:9px; transform:translateX(-50%); z-index:1; }
+.orb-mic-badge{
+  position:absolute; right:-2px; bottom:2px; z-index:2; width:28px; height:28px; border-radius:50%;
+  background:var(--accent-ink); border:3px solid var(--accent);
+  display:flex; align-items:center; justify-content:center;
+}
+.orb-mic-badge svg{ width:14px; height:14px; }
 .orb-bar{ transform-box:fill-box; transform-origin:50% 100%; }
 .orb.state-idle{ animation:breathe 4s ease-in-out infinite; }
 @keyframes breathe{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.035);} }
