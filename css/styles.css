@@ -64,7 +64,7 @@ button{cursor:pointer; background:none; border:none;}
   flex-shrink:0;
 }
 #topbar-title{ display:flex; align-items:center; gap:9px; }
-#topbar-title span{ font-family:var(--font-d); font-style:italic; font-weight:700; font-size:19px; color:var(--text); }
+#topbar-title span{ font-family:var(--font-b); font-style:normal; font-weight:800; font-size:19px; letter-spacing:.03em; color:var(--text); }
 #topbar-right{ display:flex; align-items:center; gap:10px; }
 #clock{ font-family:var(--font-b); font-size:13px; font-weight:500; color:var(--text-dim); font-variant-numeric:tabular-nums; }
 .status-dots{ display:flex; gap:5px; align-items:center; }
