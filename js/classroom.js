@@ -164,11 +164,37 @@ function openAssignmentModal(classKey){
     {name:"tasksText", label:"Tasks (one per line)", type:"textarea", rows:5, placeholder:"Research the topic\nComplete worksheet\nWrite the program\nUpload evidence\nReview and correct work"},
   ], async (data)=>{
     if(!data.title) return;
-    const tasks = data.tasksText.split("\n").map(s=>s.trim()).filter(Boolean).map(title=>({id: Math.random().toString(36).slice(2,10), title}));
+    const tasks = data.tasksText.split("\n").map(s=>s.trim()).filter(Boolean).map(title=>({id: uid(), title}));
     if(!tasks.length){ showToast("Add at least one task.","error"); return; }
     await dbAdd("classAssignments", {classKey, title:data.title, dueDate:data.dueDate||null, tasks});
     showToast("Assignment added");
   }, "Add assignment");
+}
+
+// Editing re-uses task ids for lines whose title is unchanged, so a learner's
+// existing progress against that task is kept; a new/renamed line gets a
+// fresh id (starting at "not started").
+function openEditAssignmentModal(assignmentId){
+  const a = state.classAssignments.find(x=>x.id===assignmentId);
+  if(!a) return;
+  openFormModal("Edit assignment", [
+    {name:"title", label:"Title", value:a.title},
+    {name:"dueDate", label:"Due date (optional)", type:"date", value:a.dueDate||""},
+    {name:"tasksText", label:"Tasks (one per line)", type:"textarea", rows:6, value:a.tasks.map(t=>t.title).join("\n")},
+  ], async (data)=>{
+    if(!data.title) return;
+    const lines = data.tasksText.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(!lines.length){ showToast("Add at least one task.","error"); return; }
+    const remaining = a.tasks.slice();
+    const tasks = lines.map(title=>{
+      const idx = remaining.findIndex(t=>t.title===title);
+      if(idx>=0) return remaining.splice(idx,1)[0];
+      return {id: uid(), title};
+    });
+    await dbUpdate("classAssignments", assignmentId, {title:data.title, dueDate:data.dueDate||null, tasks});
+    showToast("Assignment updated");
+    openAssignmentDetail(assignmentId);
+  }, "Save");
 }
 
 function openAssignmentDetail(assignmentId){
@@ -188,16 +214,24 @@ function openAssignmentDetail(assignmentId){
   const header = a.tasks.map(t=>'<div class="progress-task-label" title="'+esc(t.title)+'">'+esc(t.title.length>14?t.title.slice(0,13)+"…":t.title)+'</div>').join("");
   root.innerHTML = '<div class="sheet" style="max-height:92%;">'
     + '<div class="sheet-handle"></div>'
-    + '<p class="sheet-title">'+esc(a.title)+'</p>'
-    + (a.dueDate ? '<p style="color:var(--text-faint); font-size:12.5px; margin:-10px 0 14px;">Due '+esc(a.dueDate)+'</p>' : '')
+    + '<div class="screen-title-row" style="margin:0 0 4px;"><p class="sheet-title" style="margin:0;">'+esc(a.title)+'</p><a class="link-row" id="assignment-edit-tasks" style="margin:0; font-size:12.5px;">Edit tasks</a></div>'
+    + (a.dueDate ? '<p style="color:var(--text-faint); font-size:12.5px; margin:0 0 14px;">Due '+esc(a.dueDate)+'</p>' : '<div style="margin-bottom:10px;"></div>')
+    + '<div style="margin-bottom:12px;">'+a.tasks.map((t,i)=>'<div style="font-size:12px; color:var(--text-dim); padding:2px 0;">'+(i+1)+'. '+esc(t.title)+'</div>').join("")+'</div>'
     + (learners.length ? '<div class="progress-grid"><div class="progress-row"><div class="progress-row-name"></div><div class="progress-row-cells">'+header+'</div></div>'+rows+'</div>'
        : '<div class="empty-state">Add learners to this class to track progress.</div>')
-    + '<p style="color:var(--text-faint); font-size:11.5px; margin:14px 0 0;">Tap a cell to cycle: not started → in progress → needs checking → done.</p>'
+    + '<div class="progress-legend">'
+      + '<span>'+PROGRESS_ICON.not_started+' Not started</span>'
+      + '<span>'+PROGRESS_ICON.in_progress+' In progress</span>'
+      + '<span>'+PROGRESS_ICON.needs_checking+' Needs checking</span>'
+      + '<span>'+PROGRESS_ICON.done+' Done</span>'
+    + '</div>'
+    + '<p style="color:var(--text-faint); font-size:11px; margin:6px 0 0;">Tap a cell to cycle through these.</p>'
     + '<div class="modal-actions"><button type="button" id="assignment-delete" class="btn-full ghost" style="color:var(--danger); border-color:var(--danger);">Delete assignment</button><button type="button" id="assignment-close" class="btn-full">Close</button></div>'
     + '</div>';
   root.classList.remove("hidden");
   root.onclick = (e)=>{ if(e.target===root) closeModal(); };
   $("#assignment-close").onclick = closeModal;
+  $("#assignment-edit-tasks").onclick = ()=> openEditAssignmentModal(assignmentId);
   $("#assignment-delete").onclick = async ()=>{
     if(!confirm("Delete this assignment and all learner progress against it?")) return;
     state.learnerProgress = state.learnerProgress.filter(p=>p.assignmentId!==a.id);
