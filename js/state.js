@@ -19,6 +19,20 @@ export const state = {
   termDates: [], // {name, type:'term'|'holiday', start, end} — the academic calendar, entered once
   chatTurns: [], // {role:'user'|'assistant', text, ts}
   selectedDay: (new Date().getDay()+6)%7,
+
+  // ── CLASSROOM (learner tracking) ──
+  // A "class" has no id of its own -- it's identified by its classKey (the
+  // normalised subject text), so any timetable/cover session taught under
+  // the same subject -- e.g. taught twice a week -- shares one roster,
+  // one set of assignments, and one set of learner notes.
+  learners: [], // {id, name, archived}
+  enrollments: [], // {id, learnerId, classKey} — which learners are in which class
+  classAssignments: [], // {id, classKey, title, description, dueDate, tasks:[{id,title}]}
+  learnerProgress: [], // {id, assignmentId, learnerId, taskId, status} — status: not_started|in_progress|needs_checking|done
+  learnerHighlights: [], // {id, learnerId, classKey, type, text, dueDate, status, assignmentId, taskId} — type: warning|performance|appreciation|task|checking
+  classNotes: [], // {id, classKey, text}
+  selectedClassKey: null,
+  selectedLearnerId: null,
 };
 
 export const LS_KEY = "jagu_store_v1";
@@ -32,6 +46,9 @@ export function persist(){
     events: state.events, memory: state.memory, updates: state.updates,
     marking: state.marking, termDates: state.termDates,
     chat: state.chatTurns,
+    learners: state.learners, enrollments: state.enrollments,
+    classAssignments: state.classAssignments, learnerProgress: state.learnerProgress,
+    learnerHighlights: state.learnerHighlights, classNotes: state.classNotes,
   };
   try{ localStorage.setItem(LS_KEY, JSON.stringify(toSave)); }
   catch(e){ console.warn("localStorage save failed", e); showToast("Couldn't save — your browser's local storage may be full or disabled.", "error"); }
@@ -55,6 +72,12 @@ export function loadPersisted(){
   state.marking = saved.marking || [];
   state.termDates = saved.termDates || [];
   state.chatTurns = saved.chat || [];
+  state.learners = saved.learners || [];
+  state.enrollments = saved.enrollments || [];
+  state.classAssignments = saved.classAssignments || [];
+  state.learnerProgress = saved.learnerProgress || [];
+  state.learnerHighlights = saved.learnerHighlights || [];
+  state.classNotes = saved.classNotes || [];
 }
 
 export let bootDone = false;

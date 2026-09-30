@@ -183,6 +183,34 @@
       <input type="file" id="timetable-photo-input" accept="image/*" class="hidden">
     </section>
 
+    <!-- CLASSROOM (class workspace — reached from a timetable session) -->
+    <section id="screen-classroom" class="screen narrow-col">
+      <a id="classroom-back" class="link-row" style="margin:14px 0 10px; display:inline-block;">← Back to timetable</a>
+      <h1 id="classroom-title" class="screen-title" style="margin:0 0 4px;">Class</h1>
+      <p id="classroom-sessions" style="color:var(--text-faint); font-size:12.5px; margin-bottom:2px;"></p>
+      <p id="classroom-learner-count" style="color:var(--text-faint); font-size:12.5px; margin-bottom:16px;"></p>
+
+      <div id="classroom-important" class="important-row"></div>
+
+      <div class="screen-title-row" style="margin:22px 0 12px;">
+        <h2 class="section-heading" style="margin:0;">Assignments</h2>
+        <button id="classroom-add-assignment" class="btn-small">+ New</button>
+      </div>
+      <div id="classroom-assignments" class="stack"></div>
+
+      <div class="screen-title-row" style="margin:22px 0 12px;">
+        <h2 class="section-heading" style="margin:0;">Learners</h2>
+        <button id="classroom-add-learner" class="btn-small">+ Add</button>
+      </div>
+      <div id="classroom-learners" class="stack"></div>
+
+      <div class="screen-title-row" style="margin:22px 0 12px;">
+        <h2 class="section-heading" style="margin:0;">Session notes</h2>
+        <button id="classroom-add-note" class="btn-small ghost">+ Add</button>
+      </div>
+      <div id="classroom-notes" class="stack" style="margin-bottom:30px;"></div>
+    </section>
+
     <!-- SETTINGS -->
     <section id="screen-settings" class="screen narrow-col">
       <h2 class="section-heading" style="margin-top:0;">Profile</h2>

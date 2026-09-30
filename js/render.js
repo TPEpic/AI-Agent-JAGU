@@ -3,6 +3,7 @@ import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, bootDone, dbAdd, dbDelete,
 import { deleteEvent, openClassNotesModal, openEditClassModal, openEditEventModal, openEditTaskModal, openFormModal, openTaskModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { speak } from './voice.js';
+import { activeTaskRemindersForClass, classKeyFor, openClassWorkspace, renderClassroom } from './classroom.js';
 
 // ── NAVIGATION ──
 function goScreen(name){
@@ -56,6 +57,7 @@ function ttRowHtml(e){
   return '<div class="tt-row"><div class="tt-time">'+minToClock(timeToMin(e.start))+'<span class="tt-end">'+minToClock(timeToMin(e.end))+'</span></div><div class="tt-info">'+coverLine+'<div class="tt-subject">'+esc(e.subject)+'</div>'+(e.room?'<div class="tt-room">Room '+esc(e.room)+'</div>':'')
     + (hasNotes?'<div class="tt-note">'+esc(e.notes)+'</div>':'')
     + '<div class="row-gap" style="margin-top:6px;">'
+      + '<a class="link-row" data-tt-class="'+esc(e.subject)+'" style="font-size:12px; margin:0; font-weight:700;">Open class →</a>'
       + '<a class="link-row" data-tt-edit="'+e.id+'" style="font-size:12px; margin:0;">Edit</a>'
       + '<a class="link-row" data-tt-note="'+e.id+'" style="font-size:12px; margin:0;">'+(hasNotes?"Edit note":"+ Add note")+'</a>'
     + '</div>'
@@ -65,6 +67,7 @@ function wireTtRowDeletes(root){
   $$('[data-tt]', root).forEach(el=> el.addEventListener("click", async ()=>{ if(confirm("Remove this class?")) await dbDelete("timetable", el.dataset.tt); }));
   $$('[data-tt-note]', root).forEach(el=> el.addEventListener("click", ()=> openClassNotesModal(el.dataset.ttNote)));
   $$('[data-tt-edit]', root).forEach(el=> el.addEventListener("click", ()=> openEditClassModal(el.dataset.ttEdit)));
+  $$('[data-tt-class]', root).forEach(el=> el.addEventListener("click", ()=> openClassWorkspace(classKeyFor(el.dataset.ttClass))));
 }
 
 // "Free" here always means free WITHIN the 9-5 working day -- outside
@@ -123,6 +126,7 @@ export function renderAll(){
   renderLearning();
   renderTimetable();
   renderSettingsFields();
+  renderClassroom();
 }
 
 function renderHomeStatus(){
@@ -606,13 +610,24 @@ function checkClassReminders(){
   const nm = nowMin();
   const todayStr = todayISO();
   todaysEntries().forEach(c=>{
-    if(!c.notes || !c.notes.trim()) return;
+    const learnerReminders = activeTaskRemindersForClass(classKeyFor(c.subject));
+    const hasNotes = !!(c.notes && c.notes.trim());
+    if(!hasNotes && !learnerReminders.length) return;
     const minsUntil = timeToMin(c.start) - nm;
     if(minsUntil < 0 || minsUntil > CLASS_REMINDER_LEAD_MIN) return;
     const key = c.id+"_"+todayStr;
     if(remindedClasses.has(key)) return;
     remindedClasses.add(key);
-    const msg = "Reminder for "+c.subject+" in "+minsUntil+" minute"+(minsUntil===1?"":"s")+": "+c.notes;
+    const parts = [];
+    if(hasNotes) parts.push(c.notes);
+    if(learnerReminders.length){
+      const names = learnerReminders.slice(0,3).map(h=>{
+        const l = state.learners.find(x=>x.id===h.learnerId);
+        return l ? l.name : "a learner";
+      });
+      parts.push("For the class: "+names.join(", ")+(learnerReminders.length>3?" and "+(learnerReminders.length-3)+" more":"")+".");
+    }
+    const msg = "Reminder for "+c.subject+" in "+minsUntil+" minute"+(minsUntil===1?"":"s")+": "+parts.join(" ");
     showToast(msg);
     speak(msg);
   });
