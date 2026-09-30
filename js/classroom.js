@@ -191,7 +191,10 @@ export function renderClassroom(){
     ];
     $("#classroom-learners").innerHTML = sections.filter(s=>groups[s.key].length).map(s=>{
       const rows = groups[s.key].map(({l,avgPct})=> learnerRowHtml(l, avgPct, avgPct==null?null:ragStatus(avgPct))).join("");
-      return '<div class="learner-group-header" style="color:'+s.color+';"><span>'+s.label+' ('+groups[s.key].length+')</span><span class="learner-group-divider"></span></div>'+rows;
+      return '<div class="learner-group-box" style="border-color:'+s.color+'; background:color-mix(in srgb, '+s.color+' 6%, var(--surface));">'
+        + '<div class="learner-group-header" style="color:'+s.color+';">'+s.label+' ('+groups[s.key].length+')</div>'
+        + '<div class="learner-group-rows">'+rows+'</div>'
+        + '</div>';
     }).join("");
   }
   $$('[data-learner]', $("#classroom-learners")).forEach(el=> el.addEventListener("click", (e)=>{ if(e.target.closest("[data-unenroll]")) return; openLearnerDetail(el.dataset.learner); }));
