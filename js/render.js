@@ -561,6 +561,7 @@ export function renderSettingsFields(){
   $("#anthropic-fields").classList.toggle("hidden", isGemini);
   $("#toggle-voice-out").classList.toggle("on", !!state.profile.voiceOut);
   $("#toggle-convo-mode").classList.toggle("on", !!state.profile.convoMode);
+  $("#toggle-notifications").classList.toggle("on", !!state.profile.notifyEnabled);
   $("#mute-btn").classList.toggle("muted", !state.profile.voiceOut);
   if(voicesLoaded) populateVoices();
   renderTermDatesList();
@@ -603,6 +604,23 @@ export function addChatBubble(role, text){
 }
 
 
+// ── OS-LEVEL NOTIFICATIONS ──
+// Posts to the active service worker (so the notification shows even when
+// the JAGU tab isn't focused) when the browser supports it; falls back to
+// a page-level Notification otherwise. Always requires both OS permission
+// and the in-app toggle, and silently no-ops without either.
+export function notifyUser(title, body){
+  if(!state.profile.notifyEnabled) return;
+  if(!("Notification" in window) || Notification.permission!=="granted") return;
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({type:"notify", title, body});
+    } else {
+      new Notification(title, {body, icon:"icons/icon-192.png"});
+    }
+  }catch(e){ console.warn("notification failed", e); }
+}
+
 // ── REMINDER CHECKS ──
 const CLASS_REMINDER_LEAD_MIN = 10;
 const remindedClasses = new Set();
@@ -630,6 +648,7 @@ function checkClassReminders(){
     const msg = "Reminder for "+c.subject+" in "+minsUntil+" minute"+(minsUntil===1?"":"s")+": "+parts.join(" ");
     showToast(msg);
     speak(msg);
+    notifyUser("JAGU — "+c.subject, parts.join(" "));
   });
 }
 

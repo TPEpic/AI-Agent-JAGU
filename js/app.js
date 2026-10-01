@@ -16,6 +16,13 @@ $("#text-form").addEventListener("submit", (e)=>{
 });
 
 
+// ── SERVICE WORKER (installability + offline + background notifications) ──
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./sw.js").catch(e=> console.warn("service worker registration failed", e));
+  });
+}
+
 // ── BOOT ──
 (function boot(){
   initFrameBanner();

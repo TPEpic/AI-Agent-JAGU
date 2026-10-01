@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>JAGU — Standalone Edition</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4056A1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="JAGU">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -327,6 +334,15 @@
       <div class="settings-row">
         <span>Stay in conversation mode</span>
         <button id="toggle-convo-mode" class="switch"><span class="switch-knob"></span></button>
+      </div>
+
+      <h2 class="section-heading">Install &amp; notifications</h2>
+      <p style="color:var(--text-faint); font-size:12px; margin:-6px 0 12px; line-height:1.5;">
+        Add JAGU to your home screen from your browser's menu for quicker access. Notifications still need this tab (or the installed app) open somewhere — a fully closed browser can't receive them.
+      </p>
+      <div class="settings-row">
+        <span>Reminder notifications</span>
+        <button id="toggle-notifications" class="switch"><span class="switch-knob"></span></button>
       </div>
       <h2 class="section-heading">Voice diagnostics</h2>
       <div class="card" id="diag-card"></div>

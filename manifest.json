@@ -1,0 +1,16 @@
+{
+  "name": "JAGU — Standalone Edition",
+  "short_name": "JAGU",
+  "description": "Tahira's voice-first personal learning and time-management companion.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FBF6E9",
+  "theme_color": "#4056A1",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -39,6 +39,20 @@ $("#settings-rate").addEventListener("input", (e)=> saveProfile({rate:Number(e.t
 $("#settings-pitch").addEventListener("input", (e)=> saveProfile({pitch:Number(e.target.value)}));
 $("#toggle-voice-out").addEventListener("click", ()=> saveProfile({voiceOut: !state.profile.voiceOut}).then(renderSettingsFields));
 $("#toggle-convo-mode").addEventListener("click", ()=> saveProfile({convoMode: !state.profile.convoMode}).then(renderSettingsFields));
+$("#toggle-notifications").addEventListener("click", async ()=>{
+  if(state.profile.notifyEnabled){
+    await saveProfile({notifyEnabled:false});
+    renderSettingsFields();
+    return;
+  }
+  if(!("Notification" in window)){ showToast("Notifications aren't supported in this browser.","error"); return; }
+  let perm = Notification.permission;
+  if(perm==="default") perm = await Notification.requestPermission();
+  if(perm!=="granted"){ showToast("Notifications are blocked — allow them for this site in your browser's settings, then try again.","error"); return; }
+  await saveProfile({notifyEnabled:true});
+  renderSettingsFields();
+  showToast("Notifications on — reminders will show even if this tab isn't focused.");
+});
 $("#mute-btn").addEventListener("click", ()=>{
   if(speechSynthesis.speaking) speechSynthesis.cancel();
   saveProfile({voiceOut: !state.profile.voiceOut}).then(renderSettingsFields);
