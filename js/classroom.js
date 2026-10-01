@@ -1,4 +1,4 @@
-import { $, $$, esc, minToClock, showToast, timeToMin, todayIdx, uid } from './helpers.js';
+import { $, $$, addDaysISO, esc, minToClock, showToast, timeToMin, todayIdx, todayISO, uid } from './helpers.js';
 import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 import { openFormModal, closeModal } from './modals.js';
 
@@ -121,6 +121,47 @@ export function allClassKeys(){
   return Array.from(seen).sort((a,b)=> subjectDisplay(a).localeCompare(subjectDisplay(b)));
 }
 
+// Each class's roster, for JAGU's context -- so it can match a spoken class
+// name and learner name to the right ids when adding a highlight by voice.
+export function classroomRosterForAI(){
+  const lines = [];
+  allClassKeys().forEach(classKey=>{
+    const learners = learnersForClass(classKey);
+    if(!learners.length) return;
+    lines.push("- "+subjectDisplay(classKey)+": "+learners.map(l=>l.name).join(", "));
+  });
+  return lines;
+}
+
+// Matches a spoken/typed subject guess to a real class, since JAGU only
+// ever has the subject text to go on (not a classKey or timetable id).
+// Tries an exact match first, then a loose contains-either-way match.
+export function resolveClassKey(subjectGuess){
+  if(!subjectGuess) return null;
+  const norm = classKeyFor(subjectGuess);
+  const keys = allClassKeys();
+  if(keys.includes(norm)) return norm;
+  const guess = String(subjectGuess).trim().toLowerCase();
+  let match = keys.find(k=> subjectDisplay(k).toLowerCase()===guess);
+  if(match) return match;
+  match = keys.find(k=> subjectDisplay(k).toLowerCase().includes(guess) || guess.includes(subjectDisplay(k).toLowerCase()));
+  return match || null;
+}
+
+// Matches a spoken/typed learner name to a real learner enrolled in that
+// class -- exact match first, then either-way substring, then first-name-only.
+export function findLearnerByName(classKey, name){
+  if(!classKey || !name) return null;
+  const norm = String(name).trim().toLowerCase();
+  const learners = learnersForClass(classKey);
+  let match = learners.find(l=> l.name.trim().toLowerCase()===norm);
+  if(match) return match;
+  match = learners.find(l=> l.name.trim().toLowerCase().includes(norm) || norm.includes(l.name.trim().toLowerCase()));
+  if(match) return match;
+  match = learners.find(l=> l.name.trim().toLowerCase().split(" ")[0]===norm.split(" ")[0]);
+  return match || null;
+}
+
 // ── NAVIGATION ──
 export function openClassWorkspace(classKey){
   state.selectedClassKey = classKey;
@@ -224,13 +265,34 @@ export function renderClassroom(){
     if(enr) await dbDelete("enrollments", enr.id);
   }));
 
-  // Class notes
-  const notes = state.classNotes.filter(n=>n.classKey===classKey).sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
-  $("#classroom-notes").innerHTML = notes.length ? notes.map(n=>{
-    const when = new Date(n.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-    return '<div class="note-row"><span class="note-dot"></span><div class="note-body"><div class="note-text">'+esc(n.text)+'</div><div class="note-when">'+when+'</div></div><span class="task-del" data-note-del="'+n.id+'">✕</span></div>';
-  }).join("") : '<div class="empty-sub">No session notes yet.</div>';
+  // Session history — notes grouped by the lesson date they belong to
+  // (not just a flat reverse-chron list), so it's easy to see at a glance
+  // what happened last lesson versus this one.
+  $("#classroom-notes").innerHTML = sessionHistoryHtml(classKey);
   $$('[data-note-del]', $("#classroom-notes")).forEach(el=> el.addEventListener("click", ()=> dbDelete("classNotes", el.dataset.noteDel)));
+}
+
+function sessionDateLabel(iso){
+  const today = todayISO();
+  if(iso===today) return "Today";
+  if(iso===addDaysISO(today,-1)) return "Yesterday";
+  return new Date(iso+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"});
+}
+function sessionHistoryHtml(classKey){
+  const notes = state.classNotes.filter(n=>n.classKey===classKey)
+    .map(n=> Object.assign({}, n, {date: n.date || (n.createdAt||"").slice(0,10) || todayISO()}))
+    .sort((a,b)=> b.date.localeCompare(a.date) || new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  if(!notes.length) return '<div class="empty-sub">No session notes yet.</div>';
+  const groups = [];
+  notes.forEach(n=>{
+    let g = groups[groups.length-1];
+    if(!g || g.date!==n.date){ g = {date:n.date, items:[]}; groups.push(g); }
+    g.items.push(n);
+  });
+  return groups.map(g=>{
+    const rows = g.items.map(n=> '<div class="note-row"><span class="note-dot"></span><div class="note-body"><div class="note-text">'+esc(n.text)+'</div></div><span class="task-del" data-note-del="'+n.id+'">✕</span></div>').join("");
+    return '<div class="session-group"><div class="session-group-header">'+sessionDateLabel(g.date)+'</div>'+rows+'</div>';
+  }).join("");
 }
 
 // ── ASSIGNMENTS ──
@@ -472,13 +534,14 @@ function openQuickHighlightModal(learnerId, classKey, type, onDone){
   }, "Add");
 }
 
-// ── CLASS NOTES ──
+// ── CLASS NOTES / SESSION HISTORY ──
 function openClassNoteModal(classKey){
   openFormModal("Add session note", [
+    {name:"date", label:"Session date", type:"date", value:todayISO()},
     {name:"text", label:"Note", type:"textarea", rows:3, placeholder:"e.g. Most learners struggled with Task 3 — revisit next session."},
   ], async (data)=>{
     if(!data.text) return;
-    await dbAdd("classNotes", {classKey, text:data.text});
+    await dbAdd("classNotes", {classKey, text:data.text, date:data.date||todayISO()});
   }, "Save");
 }
 

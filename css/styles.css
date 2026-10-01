@@ -300,6 +300,11 @@ button{cursor:pointer; background:none; border:none;}
 .note-body{ flex:1; }
 .note-text{ font-size:12.5px; line-height:1.5; color:var(--text-dim); }
 .note-when{ font-size:11px; color:var(--text-muted); margin-top:3px; }
+.session-group{ margin-bottom:16px; }
+.session-group:last-child{ margin-bottom:0; }
+.session-group-header{ font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.session-group .note-row{ margin-bottom:8px; }
+.session-group .note-row:last-child{ margin-bottom:0; }
 
 .event-row{ display:flex; justify-content:space-between; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:15px 18px; }
 .event-title{ font-size:14px; font-weight:600; color:var(--text); }
