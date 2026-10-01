@@ -77,6 +77,14 @@
         <button id="daily-briefing-btn" class="btn-small ghost" style="margin-top:10px;">🔅 Daily briefing</button>
       </div>
 
+      <div id="backup-nudge" class="card backup-nudge hidden">
+        <p style="margin:0 0 10px; font-size:13px; line-height:1.5;">💾 It's been a while since your last backup. Everything here lives only in this browser — export a copy so a cleared cache can't lose it.</p>
+        <div class="row-gap">
+          <button id="backup-nudge-export" class="btn-small">Export backup now</button>
+          <button id="backup-nudge-dismiss" class="btn-small ghost">Remind me later</button>
+        </div>
+      </div>
+
       <div id="home-highlights" class="stack home-highlights hidden"></div>
 
       <div class="orb-wrap">
@@ -360,6 +368,8 @@
       <h2 class="section-heading">Data</h2>
       <button id="seed-demo-class-btn" class="btn-full ghost" style="margin-bottom:10px;">Load sample class (for testing)</button>
       <button id="export-btn" class="btn-full ghost" style="margin-bottom:10px;">Export backup</button>
+      <button id="import-btn" class="btn-full ghost" style="margin-bottom:10px;">Import backup</button>
+      <input type="file" id="import-file-input" accept="application/json" class="hidden">
       <button id="clear-btn" class="btn-full ghost" style="color:var(--danger); border-color:var(--danger);">Clear all data</button>
 
       <p style="color:var(--text-faint); font-size:12px; margin-top:22px; line-height:1.6;">

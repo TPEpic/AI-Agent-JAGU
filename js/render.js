@@ -15,6 +15,26 @@ function goScreen(name){
 $$(".nav-btn").forEach(b=> b.addEventListener("click", ()=>goScreen(b.dataset.screen)));
 $("#home-avatar").addEventListener("click", ()=> goScreen("settings"));
 
+// ── BACKUP NUDGE ──
+// Everything lives only in this browser's local storage; nudge for a fresh
+// export every couple of weeks (or if one's never been taken) once there's
+// actually something worth losing. "Remind me later" just hides it for the
+// rest of this visit -- it'll reappear on the next launch if still overdue.
+const BACKUP_NUDGE_DAYS = 14;
+let backupNudgeDismissed = false;
+function renderBackupNudge(){
+  const el = $("#backup-nudge");
+  if(!el) return;
+  const hasData = state.projects.length || state.tasks.length || state.timetable.length
+    || state.events.length || state.learners.length || state.marking.length;
+  const last = state.profile.lastBackupAt;
+  const daysSince = last ? (Date.now()-new Date(last).getTime())/86400000 : Infinity;
+  const due = hasData && daysSince>=BACKUP_NUDGE_DAYS;
+  el.classList.toggle("hidden", !(due && !backupNudgeDismissed));
+}
+$("#backup-nudge-export").addEventListener("click", ()=> $("#export-btn").click());
+$("#backup-nudge-dismiss").addEventListener("click", ()=>{ backupNudgeDismissed = true; renderBackupNudge(); });
+
 
 // ── TIME/STATUS LOGIC ──
 function todaysEntries(){
@@ -174,6 +194,7 @@ function renderHomeStatus(){
   }
 
   renderHomeHighlights();
+  renderBackupNudge();
 }
 
 // A quick glance at the next 1-2 upcoming events, each clearly tagged
