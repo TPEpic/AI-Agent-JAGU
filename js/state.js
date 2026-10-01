@@ -19,6 +19,7 @@ export const state = {
   termDates: [], // {name, type:'term'|'holiday', start, end} — the academic calendar, entered once
   chatTurns: [], // {role:'user'|'assistant', text, ts}
   selectedDay: (new Date().getDay()+6)%7,
+  timetableView: "day", // "day" | "week" — which layout the Timetable screen shows
 
   // ── CLASSROOM (learner tracking) ──
   // A "class" has no id of its own -- it's identified by its classKey (the

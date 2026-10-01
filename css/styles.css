@@ -314,6 +314,16 @@ button{cursor:pointer; background:none; border:none;}
 .day-tabs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
 .day-tab{ flex-shrink:0; padding:8px 15px; border-radius:99px; font-size:12.5px; font-weight:600; background:transparent; border:1px solid var(--border); color:var(--text-faint); }
 .day-tab.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.view-toggle{ display:inline-flex; gap:4px; padding:4px; border:1px solid var(--border); border-radius:99px; margin-bottom:16px; }
+.view-toggle-btn{ padding:6px 16px; border-radius:99px; font-size:12.5px; font-weight:600; background:transparent; color:var(--text-faint); }
+.view-toggle-btn.active{ background:var(--accent); color:var(--accent-ink); }
+.week-day-group{ margin-bottom:22px; }
+.week-day-group:last-child{ margin-bottom:0; }
+.week-day-header{ display:flex; align-items:center; gap:8px; font-family:var(--font-b); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); padding-bottom:9px; border-bottom:2px solid var(--border-soft); margin-bottom:4px; }
+.week-day-group.today .week-day-header{ color:var(--accent); }
+.week-day-date{ font-weight:600; text-transform:none; letter-spacing:0; color:var(--text-muted); }
+.week-day-today-badge{ background:var(--accent); color:var(--accent-ink); padding:2px 8px; border-radius:99px; font-size:10px; letter-spacing:.04em; }
+.week-day-group .tt-row:first-child{ border-top:none; }
 .tt-row{ display:flex; align-items:flex-start; gap:16px; padding:16px 0; border-top:1px solid var(--border); }
 .tt-row:last-child{ border-bottom:1px solid var(--border); }
 .tt-time{ width:72px; flex-shrink:0; font-family:var(--font-b); font-weight:600; font-size:12.5px; color:var(--accent); font-variant-numeric:tabular-nums; line-height:1.4; }

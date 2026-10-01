@@ -525,16 +525,54 @@ async function confirmDeleteProject(id){
 
 
 // ── RENDERING TIMETABLE ──
+$$("#timetable-view-toggle .view-toggle-btn").forEach(b=> b.addEventListener("click", ()=>{
+  state.timetableView = b.dataset.view;
+  renderTimetable();
+}));
+
 function renderTimetable(){
-  const tabs = $("#day-tabs");
+  $$("#timetable-view-toggle .view-toggle-btn").forEach(b=> b.classList.toggle("active", b.dataset.view===state.timetableView));
+  const dayTabs = $("#day-tabs");
+  const list = $("#timetable-list");
+
+  if(state.timetableView==="week"){
+    dayTabs.classList.add("hidden");
+    renderTimetableWeek(list);
+  } else {
+    dayTabs.classList.remove("hidden");
+    renderTimetableDay(dayTabs, list);
+  }
+}
+
+function renderTimetableDay(tabs, list){
   tabs.innerHTML = DAY_NAMES.map((d,i)=> '<button class="day-tab '+(i===state.selectedDay?"active":"")+'" data-day="'+i+'">'+d+'</button>').join("");
   $$(".day-tab", tabs).forEach(b=> b.addEventListener("click", ()=>{ state.selectedDay = Number(b.dataset.day); renderTimetable(); }));
 
   // A past cover session drops off the weekday view on its own once its
   // date has gone by, so old one-off cover slots don't linger forever.
   const entries = state.timetable.filter(e=> e.day===state.selectedDay && (!e.date || e.date>=todayISO())).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
-  const list = $("#timetable-list");
   list.innerHTML = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-state">No classes on '+DAY_LABELS[state.selectedDay]+'.</div>';
+  wireTtRowDeletes(list);
+}
+
+// Whole current week (Mon–Sun) at a glance, grouped by day -- recurring
+// classes show every week, a dated cover session only shows in the week it
+// actually falls in (unlike the Day view, which shows any future cover on
+// its weekday regardless of which week).
+function renderTimetableWeek(list){
+  const weekStart = addDaysISO(todayISO(), -todayIdx()), weekEnd = addDaysISO(weekStart, 6);
+  const weekDates = DAY_NAMES.map((_,i)=> addDaysISO(weekStart, i));
+  list.innerHTML = DAY_NAMES.map((d,i)=>{
+    const iso = weekDates[i];
+    const isToday = i===todayIdx();
+    const entries = state.timetable.filter(e=> e.day===i && (!e.date || (e.date>=weekStart && e.date<=weekEnd))).sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+    const dateLabel = new Date(iso+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+    const rows = entries.length ? entries.map(ttRowHtml).join("") : '<div class="empty-sub">No classes.</div>';
+    return '<div class="week-day-group'+(isToday?" today":"")+'">'
+      + '<div class="week-day-header"><span>'+DAY_LABELS[i]+'</span><span class="week-day-date">'+dateLabel+'</span>'+(isToday?'<span class="week-day-today-badge">Today</span>':'')+'</div>'
+      + rows
+      + '</div>';
+  }).join("");
   wireTtRowDeletes(list);
 }
 
