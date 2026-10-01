@@ -29,7 +29,7 @@ export const WORK_START_MIN = 9*60, WORK_END_MIN = 17*60;
 function overlapMinutes(startMin, endMin, winStart, winEnd){
   return Math.max(0, Math.min(endMin, winEnd) - Math.max(startMin, winStart));
 }
-function computeTeachingStats(){
+export function computeTeachingStats(){
   const today = todaysEntries();
   let teachingTodayMin = 0;
   today.forEach(e=> teachingTodayMin += overlapMinutes(timeToMin(e.start), timeToMin(e.end), WORK_START_MIN, WORK_END_MIN));

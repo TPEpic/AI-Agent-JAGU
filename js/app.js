@@ -1,9 +1,12 @@
 import { $ } from './helpers.js';
 import { initStandalone } from './state.js';
 import { LIVE, isLiveModel, liveSendUserText } from './live-api.js';
-import { handleUserMessage } from './ai.js';
+import { handleUserMessage, speakDailyBriefing } from './ai.js';
 import { initFrameBanner, runDiagnostics } from './diagnostics.js';
 import './settings.js';
+
+// ── DAILY BRIEFING (on demand) ──
+$("#daily-briefing-btn").addEventListener("click", speakDailyBriefing);
 
 // ── TEXT INPUT ──
 $("#text-form").addEventListener("submit", (e)=>{

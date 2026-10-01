@@ -96,6 +96,24 @@ export function classroomSummaryForAI(){
   return lines;
 }
 
+// Quick aggregate counts across every class, for the daily briefing --
+// how many learners need attention and how many assignment tasks are
+// waiting on a review, without the per-class detail classroomSummaryForAI
+// gives.
+export function classroomOverallCounts(){
+  let needsSupport=0, checking=0;
+  allClassKeys().forEach(classKey=>{
+    const learners = learnersForClass(classKey);
+    const assignments = assignmentsForClass(classKey);
+    learners.forEach(l=>{
+      const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,l.id),0)/assignments.length) : null;
+      if(avgPct!=null && avgPct<40) needsSupport++;
+      checking += needsCheckingCountFor(l.id, classKey);
+    });
+  });
+  return {needsSupport, checking};
+}
+
 // ── LIST OF CLASSES (derived from the timetable) ──
 export function allClassKeys(){
   const seen = new Set();

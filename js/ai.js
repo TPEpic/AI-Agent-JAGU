@@ -1,11 +1,11 @@
 import { $, daysUntil, esc, fmtMinutes, minToClock, minToLabel, pad2, showToast, timeToMin, todayIdx } from './helpers.js';
 import { DAY_LABELS, DAY_NAMES, activeProviderHasKey, dbAdd, dbDelete, dbUpdate, state } from './state.js';
-import { WORK_END_MIN, WORK_START_MIN, addChatBubble, allPendingTasks, computeStatus, currentTermInfo, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
+import { WORK_END_MIN, WORK_START_MIN, addChatBubble, allPendingTasks, computeStatus, computeTeachingStats, currentTermInfo, greetingWord, pickFallbackTask, projectById, projectProgress, taskCategory } from './render.js';
 import { closeModal } from './modals.js';
 import { openFocusSession } from './focus.js';
 import { HAS_TTS, setOrb, speak, voiceUnlocked } from './voice.js';
 import { isLiveModel } from './live-api.js';
-import { classroomSummaryForAI } from './classroom.js';
+import { classroomOverallCounts, classroomSummaryForAI } from './classroom.js';
 
 // ── CLAUDE API ──
 async function callAI(promptText, opts){
@@ -486,6 +486,45 @@ export async function handleUserMessage(text){
 }
 
 
+// ── DAILY BRIEFING ──
+// One spoken rundown pulling together today's classes, marking due, and
+// classroom highlights -- used automatically for the first greeting of the
+// day (before the working day has started), and on demand via the Home
+// screen's "Daily briefing" button.
+export function buildDailyBriefing(){
+  const name = (state.profile.name||"").split(" ")[0]||"";
+  const stats = computeTeachingStats();
+  const parts = [greetingWord()+", "+name+"."];
+
+  if(stats.teachingTodayCount>0){
+    parts.push("You've got "+stats.teachingTodayCount+" class"+(stats.teachingTodayCount===1?"":"es")+" today — "+fmtMinutes(stats.teachingTodayMin)+" of teaching, "+fmtMinutes(stats.freeTodayMin)+" free.");
+  } else {
+    parts.push("No classes on the timetable today.");
+  }
+
+  const markingDue = state.marking.filter(m=> (m.marked||0)<m.total && m.dueDate && daysUntil(m.dueDate)<=0);
+  if(markingDue.length) parts.push(markingDue.length+" marking batch"+(markingDue.length===1?"":"es")+" due or overdue.");
+
+  const counts = classroomOverallCounts();
+  if(counts.needsSupport || counts.checking){
+    const bits = [];
+    if(counts.needsSupport) bits.push(counts.needsSupport+" learner"+(counts.needsSupport===1?"":"s")+" needing support");
+    if(counts.checking) bits.push(counts.checking+" item"+(counts.checking===1?"":"s")+" needing checking");
+    parts.push("Across your classes: "+bits.join(" and ")+".");
+  }
+
+  const eventsToday = state.events.filter(e=> daysUntil(e.date)===0);
+  if(eventsToday.length) parts.push("Today: "+eventsToday.map(e=>e.title).join(", ")+".");
+
+  return parts.join(" ");
+}
+
+export function speakDailyBriefing(){
+  const msg = buildDailyBriefing();
+  addChatBubble("assistant", msg);
+  speak(msg);
+}
+
 // ── GREET ON LAUNCH ──
 export function greet(){
   const st = computeStatus();
@@ -494,7 +533,7 @@ export function greet(){
   if(st.state==="class"){
     msg = greetingWord()+", "+name+". You're in "+st.current.subject+" until "+minToLabel(timeToMin(st.current.end))+".";
   } else if(st.state==="before-hours"){
-    msg = greetingWord()+", "+name+". Your working day starts at "+minToLabel(WORK_START_MIN)+".";
+    msg = buildDailyBriefing();
   } else if(st.state==="after-hours"){
     msg = greetingWord()+", "+name+". That's the working day done for today.";
   } else {
