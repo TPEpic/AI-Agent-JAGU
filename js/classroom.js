@@ -18,8 +18,8 @@ const HIGHLIGHT_LABEL = { warning:"Warning", performance:"Performance", apprecia
 // progress -- green 80%+, amber 40-79%, red under 40%.
 function ragStatus(pct){
   if(pct>=80) return {color:"var(--rag-green)", label:"On track ("+pct+"% complete)"};
-  if(pct>=40) return {color:"var(--rag-amber)", label:"Behind ("+pct+"% complete)"};
-  return {color:"var(--rag-red)", label:"Well behind ("+pct+"% complete)"};
+  if(pct>=40) return {color:"var(--rag-amber)", label:"Making progress ("+pct+"% complete)"};
+  return {color:"var(--rag-red)", label:"Needs support ("+pct+"% complete)"};
 }
 
 function subjectDisplay(classKey){
@@ -83,7 +83,7 @@ export function classroomSummaryForAI(){
     const behind = [];
     learners.forEach(l=>{
       const avgPct = assignments.length ? Math.round(assignments.reduce((s,a)=>s+learnerAssignmentPct(a,l.id),0)/assignments.length) : null;
-      if(avgPct!=null && avgPct<80) behind.push(l.name+" ("+avgPct+"%, "+(avgPct<40?"well behind":"behind")+")");
+      if(avgPct!=null && avgPct<80) behind.push(l.name+" ("+avgPct+"%, "+(avgPct<40?"needs support":"making progress")+")");
     });
     const reminders = activeTaskRemindersForClass(classKey).map(h=>{
       const l = state.learners.find(x=>x.id===h.learnerId);
@@ -185,8 +185,8 @@ export function renderClassroom(){
       groups[bucket].push({l, avgPct});
     });
     const sections = [
-      {key:"red", label:"Well behind", color:"var(--rag-red)"},
-      {key:"amber", label:"Behind", color:"var(--rag-amber)"},
+      {key:"red", label:"Needs support", color:"var(--rag-red)"},
+      {key:"amber", label:"Making progress", color:"var(--rag-amber)"},
       {key:"green", label:"On track", color:"var(--rag-green)"},
       {key:"none", label:"No assignments yet", color:"var(--text-faint)"},
     ];
