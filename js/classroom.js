@@ -192,19 +192,21 @@ export function renderClassroom(){
   $("#classroom-learner-count").textContent = learners.length+" learner"+(learners.length===1?"":"s");
 
   // Important summary
-  let checking=0, warnings=0, tasks=0, appreciations=0;
+  let checking=0, warnings=0, tasks=0, appreciations=0, performance=0;
   learners.forEach(l=>{
     checking += needsCheckingCountFor(l.id, classKey);
     const active = activeHighlightsFor(l.id, classKey);
     warnings += active.filter(h=>h.type==="warning").length;
     tasks += active.filter(h=>h.type==="task").length;
     appreciations += state.learnerHighlights.filter(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation").length;
+    performance += state.learnerHighlights.filter(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="performance").length;
   });
   const important = [];
   if(checking) important.push('<span class="important-chip" data-filter="checking" style="cursor:pointer;">🔍 '+checking+' need'+(checking===1?"s":"")+' checking</span>');
   if(warnings) important.push('<span class="important-chip" data-filter="warning" style="cursor:pointer;">⚠️ '+warnings+' warning'+(warnings===1?"":"s")+'</span>');
   if(tasks) important.push('<span class="important-chip" data-filter="task" style="cursor:pointer;">📋 '+tasks+' individual task'+(tasks===1?"":"s")+'</span>');
   if(appreciations) important.push('<span class="important-chip" data-filter="appreciation" style="cursor:pointer;">⭐ '+appreciations+' appreciation'+(appreciations===1?"":"s")+'</span>');
+  if(performance) important.push('<span class="important-chip" data-filter="performance" style="cursor:pointer;">📈 '+performance+' performance note'+(performance===1?"":"s")+'</span>');
   $("#classroom-important").innerHTML = important.length ? important.join("") : '<span class="empty-sub">Nothing outstanding right now.</span>';
   $$('[data-filter]', $("#classroom-important")).forEach(el=> el.addEventListener("click", ()=> openImportantListModal(classKey, el.dataset.filter)));
 
@@ -226,7 +228,8 @@ export function renderClassroom(){
       .concat(needsCheckingCountFor(l.id,classKey) ? "🔍" : [])
       .concat(active.some(h=>h.type==="warning") ? "⚠️" : [])
       .concat(active.some(h=>h.type==="task") ? "📋" : [])
-      .concat(state.learnerHighlights.some(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation") ? "⭐" : []);
+      .concat(state.learnerHighlights.some(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation") ? "⭐" : [])
+      .concat(state.learnerHighlights.some(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="performance") ? "📈" : []);
     const dot = rag ? '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+';" title="'+esc(rag.label)+'"></span>' : '';
     return '<div class="event-row" data-learner="'+l.id+'" style="cursor:pointer;">'
       + '<div style="display:flex; align-items:center; gap:9px; min-width:0;">'+dot+'<div><div class="event-title">'+esc(l.name)+'</div><div class="event-when">'+(assignments.length? avgPct+"% avg progress" : "No assignments yet")+'</div></div></div>'
@@ -415,7 +418,7 @@ function openAddLearnerModal(classKey){
 // individual tasks / appreciations) to show exactly who and why, instead of
 // leaving the count as a dead end.
 function openImportantListModal(classKey, filterType){
-  const titles = {checking:"Needs checking", warning:"Warnings", task:"Individual tasks", appreciation:"Appreciations"};
+  const titles = {checking:"Needs checking", warning:"Warnings", task:"Individual tasks", appreciation:"Appreciations", performance:"Performance notes"};
   const icon = HIGHLIGHT_ICON[filterType] || "🔍";
   const items = [];
   if(filterType==="checking"){
