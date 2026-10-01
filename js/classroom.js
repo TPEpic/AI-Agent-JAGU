@@ -142,11 +142,12 @@ export function renderClassroom(){
     appreciations += state.learnerHighlights.filter(h=>h.learnerId===l.id && h.classKey===classKey && h.type==="appreciation").length;
   });
   const important = [];
-  if(checking) important.push('<span class="important-chip">🔍 '+checking+' need'+(checking===1?"s":"")+' checking</span>');
-  if(warnings) important.push('<span class="important-chip">⚠️ '+warnings+' warning'+(warnings===1?"":"s")+'</span>');
-  if(tasks) important.push('<span class="important-chip">📋 '+tasks+' individual task'+(tasks===1?"":"s")+'</span>');
-  if(appreciations) important.push('<span class="important-chip">⭐ '+appreciations+' appreciation'+(appreciations===1?"":"s")+'</span>');
+  if(checking) important.push('<span class="important-chip" data-filter="checking" style="cursor:pointer;">🔍 '+checking+' need'+(checking===1?"s":"")+' checking</span>');
+  if(warnings) important.push('<span class="important-chip" data-filter="warning" style="cursor:pointer;">⚠️ '+warnings+' warning'+(warnings===1?"":"s")+'</span>');
+  if(tasks) important.push('<span class="important-chip" data-filter="task" style="cursor:pointer;">📋 '+tasks+' individual task'+(tasks===1?"":"s")+'</span>');
+  if(appreciations) important.push('<span class="important-chip" data-filter="appreciation" style="cursor:pointer;">⭐ '+appreciations+' appreciation'+(appreciations===1?"":"s")+'</span>');
   $("#classroom-important").innerHTML = important.length ? important.join("") : '<span class="empty-sub">Nothing outstanding right now.</span>';
+  $$('[data-filter]', $("#classroom-important")).forEach(el=> el.addEventListener("click", ()=> openImportantListModal(classKey, el.dataset.filter)));
 
   // Assignments
   $("#classroom-assignments").innerHTML = assignments.length ? assignments.map(a=>{
@@ -328,6 +329,47 @@ function openAddLearnerModal(classKey){
     }
     showToast(added+" learner"+(added===1?"":"s")+" added"+(skipped?" ("+skipped+" already in this class)":""));
   }, "Add");
+}
+
+// Drills into one of the "Important" chips (needs checking / warnings /
+// individual tasks / appreciations) to show exactly who and why, instead of
+// leaving the count as a dead end.
+function openImportantListModal(classKey, filterType){
+  const titles = {checking:"Needs checking", warning:"Warnings", task:"Individual tasks", appreciation:"Appreciations"};
+  const icon = HIGHLIGHT_ICON[filterType] || "🔍";
+  const items = [];
+  if(filterType==="checking"){
+    learnersForClass(classKey).forEach(l=>{
+      assignmentsForClass(classKey).forEach(a=> a.tasks.forEach(t=>{
+        const p = progressFor(a.id, l.id, t.id);
+        if(p && p.status==="needs_checking") items.push({learnerId:l.id, learnerName:l.name, text:a.title+" — "+t.title});
+      }));
+    });
+  } else {
+    state.learnerHighlights
+      .filter(h=> h.classKey===classKey && h.type===filterType && (filterType!=="task" || h.status!=="done"))
+      .forEach(h=>{
+        const l = state.learners.find(x=>x.id===h.learnerId);
+        items.push({learnerId:h.learnerId, learnerName:l?l.name:"Unknown", text:h.text+(h.dueDate?" · due "+h.dueDate:"")});
+      });
+  }
+  const root = $("#modal-root");
+  const rowsHtml = items.length ? items.map(it=>
+    '<div class="highlight-row" data-goto-learner="'+it.learnerId+'" style="cursor:pointer;">'
+    + '<span class="highlight-icon">'+icon+'</span>'
+    + '<div class="highlight-body"><div class="highlight-type">'+esc(it.learnerName)+'</div><div class="highlight-text">'+esc(it.text)+'</div></div>'
+    + '</div>'
+  ).join("") : '<div class="empty-sub">Nothing here.</div>';
+  root.innerHTML = '<div class="sheet" style="max-height:85%;">'
+    + '<div class="sheet-handle"></div>'
+    + '<p class="sheet-title">'+icon+' '+titles[filterType]+' ('+items.length+')</p>'
+    + rowsHtml
+    + '<div class="modal-actions"><button type="button" id="important-list-close" class="btn-full">Close</button></div>'
+    + '</div>';
+  root.classList.remove("hidden");
+  root.onclick = (e)=>{ if(e.target===root) closeModal(); };
+  $("#important-list-close").onclick = closeModal;
+  $$('[data-goto-learner]', root).forEach(el=> el.addEventListener("click", ()=> openLearnerDetail(el.dataset.gotoLearner)));
 }
 
 function openLearnerDetail(learnerId){
