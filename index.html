@@ -74,15 +74,6 @@
         </div>
         <p id="status-line" class="status-line">Loading your day…</p>
         <p id="term-line" class="status-line term-line hidden"></p>
-        <button id="daily-briefing-btn" class="btn-small ghost" style="margin-top:10px;">🔅 Daily briefing</button>
-      </div>
-
-      <div id="backup-nudge" class="card backup-nudge hidden">
-        <p style="margin:0 0 10px; font-size:13px; line-height:1.5;">💾 It's been a while since your last backup. Everything here lives only in this browser — export a copy so a cleared cache can't lose it.</p>
-        <div class="row-gap">
-          <button id="backup-nudge-export" class="btn-small">Export backup now</button>
-          <button id="backup-nudge-dismiss" class="btn-small ghost">Remind me later</button>
-        </div>
       </div>
 
       <div id="home-highlights" class="stack home-highlights hidden"></div>
@@ -115,6 +106,18 @@
         <input id="text-input" type="text" placeholder="Type to JAGU…" autocomplete="off">
         <button type="submit" class="send-btn" aria-label="Send">➤</button>
       </form>
+
+      <div class="row-gap" style="justify-content:center; margin-top:18px;">
+        <button id="daily-briefing-btn" class="btn-small ghost">🔅 Daily briefing</button>
+      </div>
+
+      <div id="backup-nudge" class="card backup-nudge hidden" style="margin-top:14px;">
+        <p style="margin:0 0 10px; font-size:13px; line-height:1.5;">💾 It's been a while since your last backup. Everything here lives only in this browser — export a copy so a cleared cache can't lose it.</p>
+        <div class="row-gap">
+          <button id="backup-nudge-export" class="btn-small">Export backup now</button>
+          <button id="backup-nudge-dismiss" class="btn-small ghost">Remind me later</button>
+        </div>
+      </div>
     </section>
 
     <!-- DASHBOARD -->
