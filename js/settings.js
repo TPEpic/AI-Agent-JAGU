@@ -79,7 +79,7 @@ $("#settings-apikey").addEventListener("change", ()=> showToast("API key saved t
 $("#settings-model").addEventListener("input", (e)=> saveProfile({model:e.target.value.trim()||"claude-sonnet-5"}));
 
 $("#export-btn").addEventListener("click", async ()=>{
-  const safeProfile = Object.assign({}, state.profile, {apiKey:undefined, geminiKey:undefined, syncToken:undefined, syncGistId:undefined});
+  const safeProfile = Object.assign({}, state.profile, {apiKey:undefined, geminiKey:undefined, syncToken:undefined, syncGistId:undefined, syncHash:undefined, syncRemoteAt:undefined, autoSync:undefined});
   const backup = {
     profile: safeProfile, projects:state.projects, tasks:state.tasks, timetable:state.timetable,
     events:state.events, memory:state.memory, updates:state.updates, marking:state.marking, termDates:state.termDates,
@@ -133,7 +133,7 @@ $("#import-file-input").addEventListener("change", async (e)=>{
 
 $("#clear-btn").addEventListener("click", ()=>{
   if(!confirm("This deletes every project, task, timetable entry, event and memory JAGU has stored on this device. Continue?")) return;
-  const keep = { apiKey: state.profile.apiKey, model: state.profile.model, geminiKey: state.profile.geminiKey, geminiModel: state.profile.geminiModel, provider: state.profile.provider, syncToken: state.profile.syncToken, syncGistId: state.profile.syncGistId };
+  const keep = { apiKey: state.profile.apiKey, model: state.profile.model, geminiKey: state.profile.geminiKey, geminiModel: state.profile.geminiModel, provider: state.profile.provider, syncToken: state.profile.syncToken, syncGistId: state.profile.syncGistId, autoSync: state.profile.autoSync };
   localStorage.removeItem(LS_KEY);
   loadPersisted();
   saveProfile(keep); // keep API keys/provider — losing them is more annoying than useful here
