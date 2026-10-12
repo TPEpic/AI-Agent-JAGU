@@ -463,6 +463,21 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .pg-in_progress, .pg-needs_checking{ --pg:var(--rag-amber); }
 .progress-cell[class*="pg-"]{ color:var(--pg); font-weight:700; background:color-mix(in srgb, var(--pg) 16%, var(--surface)); border-color:var(--pg); }
 .pg-icon, .pg-text, .progress-legend span[class*="pg-"]{ color:var(--pg); font-weight:700; }
+/* Assignment popup: use the whole screen, keep the task header and names pinned while scrolling */
+.assignment-sheet{ max-width:min(1500px, 98vw); max-height:94%; display:flex; flex-direction:column; }
+.assignment-sheet .progress-grid{ overflow:auto; flex:1 1 auto; min-height:200px; max-height:calc(100vh - 250px); border:1px solid var(--border-soft); border-radius:var(--radius-s); }
+.assignment-sheet .progress-row{ width:100%; min-width:max-content; padding:6px 10px; gap:12px; }
+.assignment-sheet .progress-row-name{ width:240px; min-width:240px; font-size:14px; position:sticky; left:0; z-index:2; background:var(--bg); }
+.assignment-sheet .progress-row-name-text{ white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25; }
+.assignment-sheet .progress-row-cells{ flex:1; gap:8px; }
+.assignment-sheet .progress-cell{ flex:1 1 0; width:auto; min-width:72px; height:40px; font-size:17px; }
+.assignment-sheet .progress-task-label{ flex:1 1 0; width:auto; min-width:72px; font-size:11.5px; line-height:1.25; color:var(--text-dim); text-align:center; overflow:visible; padding:2px 2px 6px; }
+.assignment-sheet .progress-head{ position:sticky; top:0; z-index:3; background:var(--bg); border-bottom:2px solid var(--border); align-items:flex-end; }
+.assignment-sheet .progress-head .progress-row-name{ z-index:4; }
+@media (max-width:640px){
+  .assignment-sheet .progress-row-name{ width:130px; min-width:130px; font-size:12.5px; }
+  .assignment-sheet .progress-cell, .assignment-sheet .progress-task-label{ min-width:56px; }
+}
 .progress-task-label{ width:34px; flex-shrink:0; font-size:9px; color:var(--text-faint); text-align:center; line-height:1.2; overflow:hidden; }
 .progress-legend{ display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); font-size:12px; color:var(--text-dim); }
 .rag-dot{ display:inline-block; width:11px; height:11px; border-radius:50%; flex-shrink:0; vertical-align:middle; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }

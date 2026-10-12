@@ -344,13 +344,13 @@ function openEditAssignmentModal(assignmentId){
 function captureModalScroll(root){
   const sheet = root.querySelector(".sheet"), grid = root.querySelector(".progress-grid");
   if(!sheet || root.classList.contains("hidden")) return null;
-  return {top:sheet.scrollTop, left:grid?grid.scrollLeft:0};
+  return {top:sheet.scrollTop, left:grid?grid.scrollLeft:0, gridTop:grid?grid.scrollTop:0};
 }
 function restoreModalScroll(root, saved){
   if(!saved) return;
   const sheet = root.querySelector(".sheet"), grid = root.querySelector(".progress-grid");
   if(sheet){ sheet.style.animation = "none"; sheet.scrollTop = saved.top; }
-  if(grid) grid.scrollLeft = saved.left;
+  if(grid){ grid.scrollLeft = saved.left; grid.scrollTop = saved.gridTop; }
 }
 
 function openAssignmentDetail(assignmentId){
@@ -370,13 +370,12 @@ function openAssignmentDetail(assignmentId){
     const dot = '<span class="rag-dot" style="background:'+rag.color+'; color:'+rag.color+'; margin-right:6px;" title="'+esc(rag.label)+'"></span>';
     return '<div class="progress-row"><div class="progress-row-name">'+dot+'<span class="progress-row-name-text">'+esc(l.name)+'</span><span class="progress-row-pct">'+pct+'%</span></div><div class="progress-row-cells">'+cells+'</div></div>';
   }).join("");
-  const header = a.tasks.map(t=>'<div class="progress-task-label" title="'+esc(t.title)+'">'+esc(t.title.length>14?t.title.slice(0,13)+"…":t.title)+'</div>').join("");
-  root.innerHTML = '<div class="sheet" style="max-height:92%;">'
+  const header = a.tasks.map((t,i)=>'<div class="progress-task-label" title="'+esc(t.title)+'"><b>'+(i+1)+'.</b> '+esc(t.title)+'</div>').join("");
+  root.innerHTML = '<div class="sheet assignment-sheet">'
     + '<div class="sheet-handle"></div>'
     + '<div class="screen-title-row" style="margin:0 0 4px;"><p class="sheet-title" style="margin:0;">'+esc(a.title)+'</p><a class="link-row" id="assignment-edit-tasks" style="margin:0; font-size:12.5px;">Edit tasks</a></div>'
     + (a.dueDate ? '<p style="color:var(--text-faint); font-size:12.5px; margin:0 0 14px;">Due '+esc(a.dueDate)+'</p>' : '<div style="margin-bottom:10px;"></div>')
-    + '<div style="margin-bottom:12px;">'+a.tasks.map((t,i)=>'<div style="font-size:12px; color:var(--text-dim); padding:2px 0;">'+(i+1)+'. '+esc(t.title)+'</div>').join("")+'</div>'
-    + (learners.length ? '<div class="progress-grid"><div class="progress-row"><div class="progress-row-name"></div><div class="progress-row-cells">'+header+'</div></div>'+rows+'</div>'
+    + (learners.length ? '<div class="progress-grid"><div class="progress-row progress-head"><div class="progress-row-name"></div><div class="progress-row-cells">'+header+'</div></div>'+rows+'</div>'
        : '<div class="empty-state">Add learners to this class to track progress.</div>')
     + '<div class="progress-legend">'
       + '<span class="pg-not_started">'+PROGRESS_ICON.not_started+' Not started</span>'
