@@ -457,6 +457,12 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .progress-row-pct{ flex-shrink:0; margin-left:4px; font-weight:400; color:var(--text-faint); font-size:11px; }
 .progress-row-cells{ display:flex; gap:6px; }
 .progress-cell{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface-2); border:1px solid var(--border); font-size:15px; display:flex; align-items:center; justify-content:center; }
+/* Status colours: done = green, not started = red, in progress / needs checking = amber */
+.pg-done{ --pg:var(--rag-green); }
+.pg-not_started{ --pg:var(--rag-red); }
+.pg-in_progress, .pg-needs_checking{ --pg:var(--rag-amber); }
+.progress-cell[class*="pg-"]{ color:var(--pg); font-weight:700; background:color-mix(in srgb, var(--pg) 16%, var(--surface)); border-color:var(--pg); }
+.pg-icon, .pg-text, .progress-legend span[class*="pg-"]{ color:var(--pg); font-weight:700; }
 .progress-task-label{ width:34px; flex-shrink:0; font-size:9px; color:var(--text-faint); text-align:center; line-height:1.2; overflow:hidden; }
 .progress-legend{ display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); font-size:12px; color:var(--text-dim); }
 .rag-dot{ display:inline-block; width:11px; height:11px; border-radius:50%; flex-shrink:0; vertical-align:middle; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
