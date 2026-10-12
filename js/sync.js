@@ -12,7 +12,7 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
-const BUILD = "v12";
+const BUILD = "v13";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
@@ -71,6 +71,7 @@ async function pushNow(){
   if(!res.ok) throw new Error("upload "+res.status);
   const g = await res.json();
   await saveProfile({syncGistId:g.id, lastSyncAt:savedAt, syncHash:fingerprint(), syncRemoteAt:savedAt});
+  renderSyncFields();
   return savedAt;
 }
 
@@ -162,9 +163,12 @@ function schedule(ms){ clearTimeout(timer); timer = setTimeout(autoSync, ms); }
 window.addEventListener("jagu:changed", ()=>{
   if(!state.profile.autoSync || !state.profile.syncToken) return;
   if(fingerprint() === state.profile.syncHash) return; // not a real data change (e.g. chat, sync bookkeeping)
-  schedule(6000);
+  schedule(3000);
+  renderSyncFields();
 });
-document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") schedule(500); });
+// Leaving the tab/app: upload right away instead of waiting for the debounce.
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") schedule(500); else { clearTimeout(timer); autoSync(); } });
+window.addEventListener("pagehide", ()=>{ clearTimeout(timer); autoSync(); });
 window.addEventListener("online", ()=> schedule(1000));
 
 // Tablets often don't fire "change" on a pasted field before the next tap,
@@ -191,6 +195,11 @@ $("#toggle-autosync").addEventListener("click", async ()=>{
 export function renderSyncFields(){
   const t = $("#sync-token"); if(t && document.activeElement!==t) t.value = state.profile.syncToken||"";
   $("#toggle-autosync").classList.toggle("on", !!state.profile.autoSync);
+  const un = $("#sync-unsynced");
+  if(un){
+    const pending = !!state.profile.syncToken && !!state.profile.syncHash && fingerprint() !== state.profile.syncHash;
+    un.textContent = pending ? (state.profile.autoSync ? "● Changes on this device not uploaded yet — uploading shortly." : "● Changes on this device are NOT uploaded. Tap Upload to cloud (or switch Auto-sync on).") : "";
+  }
   if(state.profile.lastSyncAt && !$("#sync-status").textContent) setStatus("Last synced "+new Date(state.profile.lastSyncAt).toLocaleString());
 }
 // The module loads before saved data is read, so fill the fields once the app has booted.
