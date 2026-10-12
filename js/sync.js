@@ -12,7 +12,7 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
-const BUILD = "v9";
+const BUILD = "v10";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
@@ -35,6 +35,8 @@ function fingerprint(){
   return String(h);
 }
 const isEmptyLocal = ()=> !["projects","tasks","timetable","events","learners","classAssignments","marking"].some(k=> (state[k]||[]).length);
+
+const summary = (d)=> (d.timetable||[]).length+" classes, "+(d.learners||[]).length+" learners, "+(d.classAssignments||[]).length+" assignments";
 
 function setStatus(t){ const el = $("#sync-status"); if(el) el.textContent = t; }
 
@@ -100,7 +102,7 @@ async function manualPush(){
   setStatus("Uploading…");
   try{
     await pushNow();
-    setStatus("Uploaded "+new Date().toLocaleString()+". On your other device paste the same token and tap Download.");
+    setStatus("Uploaded "+summary(state)+" at "+new Date().toLocaleString()+". On your other device paste the same token and tap Download.");
     showToast("Data uploaded to your private Gist.");
   }catch(e){ fail(e); showToast("Sync upload failed.","error"); }
 }
@@ -112,8 +114,8 @@ async function manualPull(){
     if(!r){ setStatus("No JAGU data found in this GitHub account yet — tap Upload on your main device first."); return; }
     if(!confirm("This replaces the data on this device with the synced copy from "+(r.data.savedAt?new Date(r.data.savedAt).toLocaleString():"GitHub")+". Continue?")){ setStatus(""); return; }
     await applyRemote(r.id, r.data);
-    setStatus("Downloaded "+new Date().toLocaleString()+".");
-    showToast("Data synced to this device.");
+    setStatus("Downloaded "+summary(r.data)+" at "+new Date().toLocaleString()+".");
+    showToast("Downloaded "+summary(r.data)+".");
   }catch(e){ fail(e); showToast("Sync download failed.","error"); }
 }
 

@@ -348,7 +348,7 @@ function openAssignmentDetail(assignmentId){
     const cells = a.tasks.map(t=>{
       const p = progressFor(a.id, l.id, t.id);
       const status = p ? p.status : "not_started";
-      return '<button class="progress-cell" data-cycle="'+l.id+'|'+t.id+'" title="'+esc(t.title)+' — '+PROGRESS_LABEL[status]+'">'+PROGRESS_ICON[status]+'</button>';
+      return '<button class="progress-cell pg-'+status+'" data-cycle="'+l.id+'|'+t.id+'" title="'+esc(t.title)+' — '+PROGRESS_LABEL[status]+'">'+PROGRESS_ICON[status]+'</button>';
     }).join("");
     const pct = learnerAssignmentPct(a, l.id);
     const rag = ragStatus(pct);
@@ -364,10 +364,10 @@ function openAssignmentDetail(assignmentId){
     + (learners.length ? '<div class="progress-grid"><div class="progress-row"><div class="progress-row-name"></div><div class="progress-row-cells">'+header+'</div></div>'+rows+'</div>'
        : '<div class="empty-state">Add learners to this class to track progress.</div>')
     + '<div class="progress-legend">'
-      + '<span>'+PROGRESS_ICON.not_started+' Not started</span>'
-      + '<span>'+PROGRESS_ICON.in_progress+' In progress</span>'
-      + '<span>'+PROGRESS_ICON.needs_checking+' Needs checking</span>'
-      + '<span>'+PROGRESS_ICON.done+' Done</span>'
+      + '<span class="pg-not_started">'+PROGRESS_ICON.not_started+' Not started</span>'
+      + '<span class="pg-in_progress">'+PROGRESS_ICON.in_progress+' In progress</span>'
+      + '<span class="pg-needs_checking">'+PROGRESS_ICON.needs_checking+' Needs checking</span>'
+      + '<span class="pg-done">'+PROGRESS_ICON.done+' Done</span>'
     + '</div>'
     + '<p style="color:var(--text-faint); font-size:11px; margin:6px 0 0;">Tap a cell to cycle through these.</p>'
     + '<div class="modal-actions"><button type="button" id="assignment-delete" class="btn-full ghost" style="color:var(--danger); border-color:var(--danger);">Delete assignment</button><button type="button" id="assignment-close" class="btn-full">Close</button></div>'
@@ -478,7 +478,7 @@ function openLearnerDetail(learnerId){
       const taskRows = a.tasks.map(t=>{
         const p = progressFor(a.id, learnerId, t.id);
         const status = p ? p.status : "not_started";
-        return '<div class="today-row" style="padding:8px 0;"><span class="label">'+PROGRESS_ICON[status]+' '+esc(t.title)+'</span><span class="val" style="font-weight:400; color:var(--text-faint);">'+PROGRESS_LABEL[status]+'</span></div>';
+        return '<div class="today-row" style="padding:8px 0;"><span class="label"><span class="pg-icon pg-'+status+'">'+PROGRESS_ICON[status]+'</span> '+esc(t.title)+'</span><span class="val pg-text pg-'+status+'" style="font-weight:600;">'+PROGRESS_LABEL[status]+'</span></div>';
       }).join("");
       return '<div class="card" style="margin-bottom:10px;"><div class="proj-top"><div class="proj-name">'+esc(a.title)+'</div><div class="proj-pct">'+pct+'%</div></div>'+taskRows+'</div>';
     }).join("") : '<div class="empty-sub">No assignments yet.</div>';
