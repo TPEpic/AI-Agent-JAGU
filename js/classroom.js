@@ -339,11 +339,26 @@ function openEditAssignmentModal(assignmentId){
   }, "Save");
 }
 
+// Re-rendering a modal in place resets its scroll to the top. Capture the
+// scroll position first and restore it afterwards (and skip the slide-in).
+function captureModalScroll(root){
+  const sheet = root.querySelector(".sheet"), grid = root.querySelector(".progress-grid");
+  if(!sheet || root.classList.contains("hidden")) return null;
+  return {top:sheet.scrollTop, left:grid?grid.scrollLeft:0};
+}
+function restoreModalScroll(root, saved){
+  if(!saved) return;
+  const sheet = root.querySelector(".sheet"), grid = root.querySelector(".progress-grid");
+  if(sheet){ sheet.style.animation = "none"; sheet.scrollTop = saved.top; }
+  if(grid) grid.scrollLeft = saved.left;
+}
+
 function openAssignmentDetail(assignmentId){
   const a = state.classAssignments.find(x=>x.id===assignmentId);
   if(!a) return;
   const learners = learnersForClass(a.classKey);
   const root = $("#modal-root");
+  const savedScroll = captureModalScroll(root);
   const rows = learners.map(l=>{
     const cells = a.tasks.map(t=>{
       const p = progressFor(a.id, l.id, t.id);
@@ -373,6 +388,7 @@ function openAssignmentDetail(assignmentId){
     + '<div class="modal-actions"><button type="button" id="assignment-delete" class="btn-full ghost" style="color:var(--danger); border-color:var(--danger);">Delete assignment</button><button type="button" id="assignment-close" class="btn-full">Close</button></div>'
     + '</div>';
   root.classList.remove("hidden");
+  restoreModalScroll(root, savedScroll);
   root.onclick = (e)=>{ if(e.target===root) closeModal(); };
   $("#assignment-close").onclick = closeModal;
   $("#assignment-edit-tasks").onclick = ()=> openEditAssignmentModal(assignmentId);
@@ -519,7 +535,7 @@ function openLearnerDetail(learnerId){
       refresh();
     }));
   }
-  function refresh(){ root.innerHTML = html(); root.classList.remove("hidden"); wire(); }
+  function refresh(){ const saved = captureModalScroll(root); root.innerHTML = html(); root.classList.remove("hidden"); restoreModalScroll(root, saved); wire(); }
 
   root.innerHTML = html();
   root.classList.remove("hidden");
