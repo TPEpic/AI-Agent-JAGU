@@ -12,7 +12,7 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
-const BUILD = "v10";
+const BUILD = "v11";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
@@ -98,12 +98,17 @@ const fail = (e)=>{
 
 // ── Manual buttons ──
 async function manualPush(){
-  if(!state.profile.syncToken){ showToast("Paste a GitHub token first.","error"); return; }
   setStatus("Uploading…");
   try{
+    const remote = await fetchRemote();
+    if(remote && remote.data.savedAt !== state.profile.syncRemoteAt){
+      // The cloud holds a version this device has never downloaded -- don't silently replace it.
+      const ok = confirm("The cloud already has a different copy ("+summary(remote.data)+").\nThis device has "+summary(state)+".\n\nUploading will REPLACE the cloud copy with this device's data.\n\nOK = replace the cloud copy   Cancel = keep the cloud copy");
+      if(!ok){ setStatus("Upload cancelled — the cloud copy was left untouched. Use Download to get it instead."); return; }
+    }
     await pushNow();
     setStatus("Uploaded "+summary(state)+" at "+new Date().toLocaleString()+". On your other device paste the same token and tap Download.");
-    showToast("Data uploaded to your private Gist.");
+    showToast("Uploaded "+summary(state)+".");
   }catch(e){ fail(e); showToast("Sync upload failed.","error"); }
 }
 async function manualPull(){
@@ -138,10 +143,9 @@ async function autoSync(){
       setStatus("Auto-synced (downloaded) "+new Date().toLocaleString());
       showToast("Updated from your other device.");
     } else if(remoteChanged && localChanged){
-      const useCloud = confirm("Your data changed on this device AND in the cloud.\n\nOK = use the cloud copy (replaces this device)\nCancel = keep this device and overwrite the cloud");
-      if(useCloud){ await applyRemote(remote.id, remote.data); showToast("Updated from the cloud."); }
-      else { await pushNow(); showToast("Cloud updated from this device."); }
-      setStatus("Auto-synced "+new Date().toLocaleString());
+      // Both sides differ (or this device has never synced before). Never guess which to keep.
+      setStatus("⚠ Auto-sync paused: this device ("+summary(state)+") and the cloud ("+summary(remote.data)+") are different. Tap Download to use the cloud copy, or Upload to replace it with this device's data.");
+      return;
     } else if(localChanged && isEmptyLocal()){
       // Never overwrite the cloud with an empty device (e.g. after "Clear all data").
       await applyRemote(remote.id, remote.data);
