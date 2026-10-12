@@ -353,6 +353,47 @@ function restoreModalScroll(root, saved){
   if(grid){ grid.scrollLeft = saved.left; grid.scrollTop = saved.gridTop; }
 }
 
+// Copy an assignment (title, due date and task list) into one or more other
+// classes. Each copy gets its own ids, and every learner starts at "not started".
+function openCopyAssignmentModal(assignmentId){
+  const a = state.classAssignments.find(x=>x.id===assignmentId);
+  if(!a) return;
+  const keys = new Set();
+  state.timetable.forEach(t=> keys.add(classKeyFor(t.subject)));
+  state.enrollments.forEach(e=> keys.add(e.classKey));
+  keys.delete(a.classKey);
+  const classes = [...keys].filter(Boolean).sort((x,y)=> subjectDisplay(x).localeCompare(subjectDisplay(y)));
+  const root = $("#modal-root");
+  const rows = classes.map(k=>{
+    const has = assignmentsForClass(k).some(x=> x.title.trim().toLowerCase()===a.title.trim().toLowerCase());
+    return '<label class="settings-row" style="padding:12px 0;"><span style="font-size:13.5px;">'+esc(subjectDisplay(k))
+      +'<br><span style="color:var(--text-faint); font-size:11.5px;">'+learnersForClass(k).length+' learners'+(has?' · already has "'+esc(a.title)+'"':'')+'</span></span>'
+      +'<input type="checkbox" data-copy-to="'+esc(k)+'" '+(has?'disabled':'')+' style="width:22px; height:22px;"></label>';
+  }).join("");
+  root.innerHTML = '<div class="sheet">'
+    + '<div class="sheet-handle"></div>'
+    + '<p class="sheet-title">Copy "'+esc(a.title)+'"</p>'
+    + '<p style="color:var(--text-dim); font-size:13px; margin-bottom:8px; line-height:1.5;">Choose the classes to copy this assignment (title, due date and '+a.tasks.length+' task'+(a.tasks.length===1?'':'s')+') into. Each class tracks its own learners\' progress, starting from "not started".</p>'
+    + (classes.length ? rows : '<div class="empty-state">No other classes yet — add them to the timetable first.</div>')
+    + '<div class="modal-actions sticky-actions"><button type="button" id="copy-cancel" class="btn-full ghost">Back</button>'
+    + (classes.length ? '<button type="button" id="copy-confirm" class="btn-full">Copy</button>' : '') + '</div>'
+    + '</div>';
+  root.classList.remove("hidden");
+  root.onclick = (e)=>{ if(e.target===root) closeModal(); };
+  $("#copy-cancel").onclick = ()=> openAssignmentDetail(assignmentId);
+  const ok = $("#copy-confirm");
+  if(ok) ok.onclick = async ()=>{
+    const targets = $$('[data-copy-to]', root).filter(c=>c.checked).map(c=>c.dataset.copyTo);
+    if(!targets.length){ showToast("Tick at least one class.","error"); return; }
+    ok.disabled = true;
+    for(const classKey of targets){
+      await dbAdd("classAssignments", {classKey, title:a.title, dueDate:a.dueDate||null, tasks:a.tasks.map(t=>({id:uid(), title:t.title}))});
+    }
+    showToast("Copied to "+targets.length+" class"+(targets.length===1?"":"es")+".");
+    openAssignmentDetail(assignmentId);
+  };
+}
+
 function openAssignmentDetail(assignmentId){
   const a = state.classAssignments.find(x=>x.id===assignmentId);
   if(!a) return;
@@ -373,7 +414,7 @@ function openAssignmentDetail(assignmentId){
   const header = a.tasks.map((t,i)=>'<div class="progress-task-label" title="'+esc(t.title)+'"><b>'+(i+1)+'.</b> '+esc(t.title)+'</div>').join("");
   root.innerHTML = '<div class="sheet assignment-sheet">'
     + '<div class="sheet-handle"></div>'
-    + '<div class="screen-title-row" style="margin:0 0 4px;"><p class="sheet-title" style="margin:0;">'+esc(a.title)+'</p><a class="link-row" id="assignment-edit-tasks" style="margin:0; font-size:12.5px;">Edit tasks</a></div>'
+    + '<div class="screen-title-row" style="margin:0 0 4px;"><p class="sheet-title" style="margin:0;">'+esc(a.title)+'</p><span style="display:flex; gap:16px;"><a class="link-row" id="assignment-copy" style="margin:0; font-size:12.5px;">Copy to another class</a><a class="link-row" id="assignment-edit-tasks" style="margin:0; font-size:12.5px;">Edit tasks</a></span></div>'
     + (a.dueDate ? '<p style="color:var(--text-faint); font-size:12.5px; margin:0 0 14px;">Due '+esc(a.dueDate)+'</p>' : '<div style="margin-bottom:10px;"></div>')
     + (learners.length ? '<div class="progress-grid"><div class="progress-row progress-head"><div class="progress-row-name"></div><div class="progress-row-cells">'+header+'</div></div>'+rows+'</div>'
        : '<div class="empty-state">Add learners to this class to track progress.</div>')
@@ -391,6 +432,7 @@ function openAssignmentDetail(assignmentId){
   root.onclick = (e)=>{ if(e.target===root) closeModal(); };
   $("#assignment-close").onclick = closeModal;
   $("#assignment-edit-tasks").onclick = ()=> openEditAssignmentModal(assignmentId);
+  $("#assignment-copy").onclick = ()=> openCopyAssignmentModal(assignmentId);
   $("#assignment-delete").onclick = async ()=>{
     if(!confirm("Delete this assignment and all learner progress against it?")) return;
     state.learnerProgress = state.learnerProgress.filter(p=>p.assignmentId!==a.id);
