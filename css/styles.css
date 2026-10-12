@@ -390,6 +390,9 @@ input[type=range]{ width:100%; accent-color:var(--accent); }
 .sheet-handle{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 16px; }
 .sheet-title{ font-family:var(--font-d); font-size:20px; font-weight:600; margin-bottom:16px; color:var(--text); }
 .modal-actions{ display:flex; gap:10px; margin-top:6px; }
+/* Keep Cancel/Import visible on tablets where a tall form scrolls inside the sheet */
+.sticky-actions{ position:sticky; bottom:-26px; background:var(--bg); padding:12px 0 4px; touch-action:manipulation; }
+.btn-full, .btn-small{ touch-action:manipulation; }
 
 #onboarding{
   background:rgba(33,31,28,.32);

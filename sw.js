@@ -2,13 +2,13 @@
 // Strategy: network-first (so a fresh deploy is always picked up while
 // online, instead of getting stuck showing an old cached version), falling
 // back to the cache when offline.
-const CACHE_NAME = 'jagu-shell-v2';
+const CACHE_NAME = 'jagu-shell-v3';
 const PRECACHE_URLS = [
   './', './index.html', './manifest.json', './favicon.svg',
   './css/styles.css',
   './js/app.js', './js/ai.js', './js/classroom.js', './js/diagnostics.js',
   './js/focus.js', './js/helpers.js', './js/live-api.js', './js/modals.js',
-  './js/render.js', './js/settings.js', './js/state.js', './js/voice.js',
+  './js/render.js', './js/settings.js', './js/state.js', './js/sync.js', './js/voice.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
 

@@ -1,5 +1,6 @@
-import { $, addDaysISO, dateToDayIdx, esc, minToHHMM, nowHHMM, showToast, timeToMin, todayISO } from './helpers.js';
-import { DAY_LABELS, dbAdd, dbDelete, dbUpdate, state } from './state.js';
+import { $, uid, addDaysISO, dateToDayIdx, esc, minToHHMM, nowHHMM, showToast, timeToMin, todayISO } from './helpers.js';
+import { renderAll } from './render.js';
+import { DAY_LABELS, persist, dbAdd, dbDelete, dbUpdate, state } from './state.js';
 
 // ── GENERIC FORM MODAL ──
 export function openFormModal(title, fields, onSubmit, submitLabel){
@@ -180,24 +181,37 @@ function openImportModal(){
     + '<p style="color:var(--text-dim); font-size:13px; margin-bottom:14px; line-height:1.5;">Your corrected timetable is already filled in below — just hit Import. To bring in a different set later, paste your own JSON here in the same shape (day: 0=Mon…6=Sun).</p>'
     + '<textarea id="import-json" class="text-field" style="height:220px; font-family:var(--font-m); font-size:11.5px; resize:vertical;">'+esc(json)+'</textarea>'
     + '<label class="settings-row" style="padding:12px 0 4px; border:none;"><span style="font-size:13px;">Clear existing timetable first</span><input type="checkbox" id="import-clear-first"></label>'
-    + '<div class="modal-actions"><button type="button" id="import-cancel" class="btn-full ghost">Cancel</button><button type="button" id="import-confirm" class="btn-full">Import all</button></div>'
+    + '<div class="modal-actions sticky-actions"><button type="button" id="import-cancel" class="btn-full ghost">Cancel</button><button type="button" id="import-confirm" class="btn-full">Import all</button></div>'
     + '</div>';
   root.classList.remove("hidden");
   root.onclick = (e)=>{ if(e.target===root) closeModal(); };
   $("#import-cancel").onclick = closeModal;
-  $("#import-confirm").onclick = async ()=>{
+  let importing = false;
+  $("#import-confirm").onclick = ()=>{
+    if(importing) return; // ignore double taps -- stops duplicate imports
     let entries;
     try{ entries = JSON.parse($("#import-json").value); }
     catch(e){ showToast("That doesn't look like valid JSON — check for a stray comma or bracket.","error"); return; }
     if(!Array.isArray(entries) || entries.length===0){ showToast("Expected a JSON array of class entries.","error"); return; }
     const clean = entries.filter(x=> x && x.subject && x.start && x.end && Number.isInteger(x.day) && x.day>=0 && x.day<=6);
     if(clean.length===0){ showToast("No valid entries found — check day/start/end/subject on each one.","error"); return; }
+    importing = true;
+    const clearFirst = !!($("#import-clear-first") && $("#import-clear-first").checked);
     closeModal();
-    if($("#import-clear-first") && $("#import-clear-first").checked){
-      for(const t of state.timetable.slice()){ await dbDelete("timetable", t.id); }
+    if(clearFirst) state.timetable = [];
+    // Skip classes already on the timetable so a second import can't double up.
+    const key = t=> [t.day, t.start, t.end, (t.subject||"").trim().toLowerCase()].join("|");
+    const have = new Set(state.timetable.filter(t=>!t.isCover).map(key));
+    let added = 0;
+    for(const t of clean){
+      if(have.has(key(t))) continue;
+      have.add(key(t));
+      state.timetable.push({id:uid(), day:t.day, start:t.start, end:t.end, subject:t.subject, room:t.room||null, createdAt:new Date().toISOString()});
+      added++;
     }
-    for(const t of clean){ await dbAdd("timetable", {day:t.day, start:t.start, end:t.end, subject:t.subject, room:t.room||null}); }
-    showToast("Imported "+clean.length+" class"+(clean.length===1?"":"es")+".");
+    persist(); renderAll(); // once, not per entry
+    const skipped = clean.length-added;
+    showToast("Imported "+added+" class"+(added===1?"":"es")+(skipped? " ("+skipped+" already on your timetable)":"")+".");
   };
 }
 
