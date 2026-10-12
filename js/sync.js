@@ -12,7 +12,7 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
-const BUILD = "v15";
+const BUILD = "v16";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
