@@ -470,8 +470,23 @@
       d.textContent = "JAGU problem: " + msg + "\n" + navigator.userAgent;
     }catch(e){}
   }
-  window.addEventListener("error", function(e){ show((e.message||"script failed to load") + (e.filename? " ("+e.filename.split("/").pop()+":"+e.lineno+")":"")); });
-  window.addEventListener("unhandledrejection", function(e){ show(String(e.reason&&e.reason.message||e.reason)); });
+  /* Mixed old/new cached files can break startup. Once per session: wipe the service-worker
+     caches, force-refresh every script from the network, then reload. */
+  var FILES = ["index.html","css/styles.css","js/app.js","js/ai.js","js/classroom.js","js/diagnostics.js","js/focus.js","js/helpers.js","js/live-api.js","js/modals.js","js/render.js","js/settings.js","js/state.js","js/sync.js","js/voice.js"];
+  function selfHeal(){
+    try{
+      if(sessionStorage.getItem("jagu_healed")) return false;
+      sessionStorage.setItem("jagu_healed","1");
+    }catch(e){ return false; }
+    var jobs = [];
+    if(window.caches) jobs.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }));
+    if(navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); }));
+    FILES.forEach(function(f){ jobs.push(fetch(f, {cache:"reload"}).catch(function(){})); });
+    Promise.all(jobs).then(function(){ location.reload(); }, function(){ location.reload(); });
+    return true;
+  }
+  window.addEventListener("error", function(e){ if(selfHeal()) return; show((e.message||"script failed to load") + (e.filename? " ("+e.filename.split("/").pop()+":"+e.lineno+")":"")); });
+  window.addEventListener("unhandledrejection", function(e){ if(selfHeal()) return; show(String(e.reason&&e.reason.message||e.reason)); });
 })();
 </script>
 <script type="module" src="js/app.js"></script>
