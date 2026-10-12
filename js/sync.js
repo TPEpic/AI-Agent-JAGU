@@ -12,6 +12,7 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
+const BUILD = "v7";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
@@ -201,7 +202,8 @@ async function checkStorage(){
     if(navigator.storage && navigator.storage.persist){ persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist()); }
   }catch(e){}
   const hasData = !!localStorage.getItem(LS_KEY);
-  if(!ok) el.textContent = "⚠ This browser is blocking saved data (private/incognito mode or site data blocked). Settings and keys will vanish on refresh — open JAGU in a normal (non-private) tab and allow site data.";
-  else if(persisted===false) el.textContent = "Storage works here, but the browser may clear it when space is low or after a few days without use. Adding JAGU to the home screen helps. "+(hasData?"":"(Nothing saved yet.)");
-  else el.textContent = "Storage OK — settings are kept on this device.";
+  const pre = "[app "+BUILD+"] ";
+  if(!ok) el.textContent = pre+"⚠ This browser is blocking saved data (private/incognito mode or site data blocked). Settings and keys will vanish on refresh — open JAGU in a normal (non-private) tab and allow site data.";
+  else if(persisted===false) el.textContent = pre+"Storage works here, but the browser may clear it when space is low or after a few days without use. Adding JAGU to the home screen helps. "+(hasData?"":"(Nothing saved yet.)");
+  else el.textContent = pre+"Storage OK — settings are kept on this device.";
 }
