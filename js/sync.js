@@ -186,5 +186,22 @@ export function renderSyncFields(){
   $("#toggle-autosync").classList.toggle("on", !!state.profile.autoSync);
   if(state.profile.lastSyncAt && !$("#sync-status").textContent) setStatus("Last synced "+new Date(state.profile.lastSyncAt).toLocaleString());
 }
+// The module loads before saved data is read, so fill the fields once the app has booted.
+window.addEventListener("load", ()=>{ renderSyncFields(); checkStorage(); });
 renderSyncFields();
 schedule(1500); // on open
+
+// Tells the user plainly whether this browser is really keeping JAGU's data.
+async function checkStorage(){
+  const el = $("#storage-status"); if(!el) return;
+  let ok = false;
+  try{ localStorage.setItem("jagu_probe","1"); ok = localStorage.getItem("jagu_probe")==="1"; localStorage.removeItem("jagu_probe"); }catch(e){}
+  let persisted = null;
+  try{
+    if(navigator.storage && navigator.storage.persist){ persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist()); }
+  }catch(e){}
+  const hasData = !!localStorage.getItem(LS_KEY);
+  if(!ok) el.textContent = "⚠ This browser is blocking saved data (private/incognito mode or site data blocked). Settings and keys will vanish on refresh — open JAGU in a normal (non-private) tab and allow site data.";
+  else if(persisted===false) el.textContent = "Storage works here, but the browser may clear it when space is low or after a few days without use. Adding JAGU to the home screen helps. "+(hasData?"":"(Nothing saved yet.)");
+  else el.textContent = "Storage OK — settings are kept on this device.";
+}
