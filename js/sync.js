@@ -4,41 +4,38 @@ import { renderAll } from './render.js';
 
 // ── CROSS-DEVICE SYNC via a private GitHub Gist ──
 // GitHub Pages is static, so there's no server to hold your data. Instead
-// JAGU can push/pull its data to a private Gist in your own GitHub account.
+// JAGU pushes/pulls its data to a private Gist in your own GitHub account.
 // The token stays on each device; AI keys and the token are never uploaded.
+//
+// Auto-sync: local changes are uploaded a few seconds after you make them,
+// and the cloud copy is checked when JAGU opens or the tab is shown again.
+// We remember a fingerprint of the data at the last sync (syncHash) and the
+// cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
+// this device, the cloud, or both have changed since.
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
+const SYNC_ONLY = ["apiKey","geminiKey","syncToken","syncGistId","lastSyncAt","syncHash","syncRemoteAt","autoSync","lastBackupAt"];
 const api = (path, opts={})=> fetch("https://api.github.com"+path, Object.assign({}, opts, {
   headers: Object.assign({Authorization:"Bearer "+state.profile.syncToken, Accept:"application/vnd.github+json", "Content-Type":"application/json"}, opts.headers||{}),
 }));
 
 function snapshot(){
   const profile = Object.assign({}, state.profile);
-  ["apiKey","geminiKey","syncToken","syncGistId"].forEach(k=> delete profile[k]);
-  const data = {profile, savedAt:new Date().toISOString()};
+  SYNC_ONLY.forEach(k=> delete profile[k]);
+  const data = {profile};
   KEYS.forEach(k=> data[k] = state[k]);
   return data;
 }
+function fingerprint(){
+  const str = JSON.stringify(snapshot());
+  let h = 5381;
+  for(let i=0;i<str.length;i++) h = ((h<<5)+h+str.charCodeAt(i))|0;
+  return String(h);
+}
+const isEmptyLocal = ()=> !["projects","tasks","timetable","events","learners","classAssignments","marking"].some(k=> (state[k]||[]).length);
 
 function setStatus(t){ const el = $("#sync-status"); if(el) el.textContent = t; }
-
-async function push(){
-  if(!state.profile.syncToken){ showToast("Paste a GitHub token first.","error"); return; }
-  setStatus("Uploading…");
-  const files = {[FILE]:{content:JSON.stringify(snapshot())}};
-  let res;
-  if(state.profile.syncGistId){
-    res = await api("/gists/"+state.profile.syncGistId, {method:"PATCH", body:JSON.stringify({files})});
-  } else {
-    res = await api("/gists", {method:"POST", body:JSON.stringify({description:"JAGU data (private)", public:false, files})});
-  }
-  if(!res.ok){ setStatus("Upload failed ("+res.status+") — check the token has the 'gist' permission."); showToast("Sync upload failed.","error"); return; }
-  const g = await res.json();
-  await saveProfile({syncGistId:g.id, lastSyncAt:new Date().toISOString()});
-  setStatus("Uploaded "+new Date().toLocaleString()+". On your other device paste the same token and tap Download.");
-  showToast("Data uploaded to your private Gist.");
-}
 
 async function findGist(){
   const res = await api("/gists?per_page=100");
@@ -47,41 +44,137 @@ async function findGist(){
   const g = list.find(x=> x.files && x.files[FILE]);
   return g ? g.id : null;
 }
-
-async function pull(){
-  if(!state.profile.syncToken){ showToast("Paste a GitHub token first.","error"); return; }
-  setStatus("Downloading…");
-  let id = state.profile.syncGistId || await findGist();
-  if(!id){ setStatus("No JAGU data found in this GitHub account yet — tap Upload on your main device first."); return; }
+// → {id, data} | null (no cloud copy yet). Throws on network / auth failure.
+async function fetchRemote(){
+  const id = state.profile.syncGistId || await findGist();
+  if(!id) return null;
   const res = await api("/gists/"+id);
-  if(!res.ok){ setStatus("Download failed ("+res.status+")."); showToast("Sync download failed.","error"); return; }
+  if(res.status===404) return null;
+  if(!res.ok) throw new Error("download "+res.status);
   const g = await res.json();
   const f = g.files && g.files[FILE];
-  let text = f && f.content;
-  if(f && f.truncated && f.raw_url){ text = await (await fetch(f.raw_url)).text(); }
-  let data;
-  try{ data = JSON.parse(text); }catch(e){ setStatus("The synced file is unreadable."); return; }
-  if(!confirm("This replaces the data on this device with the synced copy from "+(data.savedAt?new Date(data.savedAt).toLocaleString():"GitHub")+". Continue?")) { setStatus(""); return; }
+  if(!f) return null;
+  let text = f.content;
+  if(f.truncated && f.raw_url) text = await (await fetch(f.raw_url)).text();
+  return {id, data: JSON.parse(text)};
+}
+
+async function pushNow(){
+  const savedAt = new Date().toISOString();
+  const files = {[FILE]:{content:JSON.stringify(Object.assign(snapshot(), {savedAt}))}};
+  const res = state.profile.syncGistId
+    ? await api("/gists/"+state.profile.syncGistId, {method:"PATCH", body:JSON.stringify({files})})
+    : await api("/gists", {method:"POST", body:JSON.stringify({description:"JAGU data (private)", public:false, files})});
+  if(!res.ok) throw new Error("upload "+res.status);
+  const g = await res.json();
+  await saveProfile({syncGistId:g.id, lastSyncAt:savedAt, syncHash:fingerprint(), syncRemoteAt:savedAt});
+  return savedAt;
+}
+
+async function applyRemote(id, data){
   const current = JSON.parse(localStorage.getItem(LS_KEY)) || {};
   const cp = current.profile || {};
   const merged = Object.assign({}, current, {
-    profile: Object.assign({}, cp, data.profile||{}, {apiKey:cp.apiKey, geminiKey:cp.geminiKey, syncToken:cp.syncToken, syncGistId:id, lastSyncAt:new Date().toISOString()}),
+    profile: Object.assign({}, cp, data.profile||{}, {apiKey:cp.apiKey, geminiKey:cp.geminiKey, syncToken:cp.syncToken, autoSync:cp.autoSync, lastBackupAt:cp.lastBackupAt, syncGistId:id}),
     chat: current.chat||[],
   });
   KEYS.forEach(k=> merged[k] = data[k]||[]);
   localStorage.setItem(LS_KEY, JSON.stringify(merged));
   loadPersisted();
+  const now = new Date().toISOString();
+  await saveProfile({lastSyncAt:now, syncHash:fingerprint(), syncRemoteAt:data.savedAt||now});
   renderAll();
-  setStatus("Downloaded "+new Date().toLocaleString()+".");
-  showToast("Data synced to this device.");
+  renderSyncFields();
 }
 
-const wrap = fn=> async ()=>{ try{ await fn(); }catch(e){ console.warn("sync failed", e); setStatus("Sync failed — check your connection."); showToast("Sync failed.","error"); } };
+const fail = (e)=>{
+  console.warn("sync failed", e);
+  const m = String(e&&e.message||e);
+  setStatus(/ 40[13]/.test(m) ? "GitHub rejected the token — check it has the 'gist' permission and hasn't expired." : "Sync failed — check your connection.");
+};
+
+// ── Manual buttons ──
+async function manualPush(){
+  if(!state.profile.syncToken){ showToast("Paste a GitHub token first.","error"); return; }
+  setStatus("Uploading…");
+  try{
+    await pushNow();
+    setStatus("Uploaded "+new Date().toLocaleString()+". On your other device paste the same token and tap Download.");
+    showToast("Data uploaded to your private Gist.");
+  }catch(e){ fail(e); showToast("Sync upload failed.","error"); }
+}
+async function manualPull(){
+  if(!state.profile.syncToken){ showToast("Paste a GitHub token first.","error"); return; }
+  setStatus("Downloading…");
+  try{
+    const r = await fetchRemote();
+    if(!r){ setStatus("No JAGU data found in this GitHub account yet — tap Upload on your main device first."); return; }
+    if(!confirm("This replaces the data on this device with the synced copy from "+(r.data.savedAt?new Date(r.data.savedAt).toLocaleString():"GitHub")+". Continue?")){ setStatus(""); return; }
+    await applyRemote(r.id, r.data);
+    setStatus("Downloaded "+new Date().toLocaleString()+".");
+    showToast("Data synced to this device.");
+  }catch(e){ fail(e); showToast("Sync download failed.","error"); }
+}
+
+// ── Auto-sync ──
+let busy = false, timer = null;
+async function autoSync(){
+  const p = state.profile;
+  if(!p.autoSync || !p.syncToken || busy) return;
+  busy = true;
+  try{
+    const remote = await fetchRemote();
+    const localChanged = fingerprint() !== p.syncHash;
+    if(!remote){
+      if(!isEmptyLocal()){ await pushNow(); setStatus("Auto-synced "+new Date().toLocaleString()); }
+      return;
+    }
+    const remoteChanged = remote.data.savedAt !== p.syncRemoteAt;
+    if(remoteChanged && (!localChanged || isEmptyLocal())){
+      await applyRemote(remote.id, remote.data);
+      setStatus("Auto-synced (downloaded) "+new Date().toLocaleString());
+      showToast("Updated from your other device.");
+    } else if(remoteChanged && localChanged){
+      const useCloud = confirm("Your data changed on this device AND in the cloud.\n\nOK = use the cloud copy (replaces this device)\nCancel = keep this device and overwrite the cloud");
+      if(useCloud){ await applyRemote(remote.id, remote.data); showToast("Updated from the cloud."); }
+      else { await pushNow(); showToast("Cloud updated from this device."); }
+      setStatus("Auto-synced "+new Date().toLocaleString());
+    } else if(localChanged && isEmptyLocal()){
+      // Never overwrite the cloud with an empty device (e.g. after "Clear all data").
+      await applyRemote(remote.id, remote.data);
+      showToast("This device was empty — restored from the cloud.");
+    } else if(localChanged){
+      await pushNow();
+      setStatus("Auto-synced "+new Date().toLocaleString());
+    }
+  }catch(e){ fail(e); }
+  finally{ busy = false; }
+}
+function schedule(ms){ clearTimeout(timer); timer = setTimeout(autoSync, ms); }
+
+window.addEventListener("jagu:changed", ()=>{
+  if(!state.profile.autoSync || !state.profile.syncToken) return;
+  if(fingerprint() === state.profile.syncHash) return; // not a real data change (e.g. chat, sync bookkeeping)
+  schedule(6000);
+});
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") schedule(500); });
+window.addEventListener("online", ()=> schedule(1000));
+
 $("#sync-token").addEventListener("change", (e)=>{ saveProfile({syncToken:e.target.value.trim()}); showToast("Token saved on this device."); });
-$("#sync-push").addEventListener("click", wrap(push));
-$("#sync-pull").addEventListener("click", wrap(pull));
+$("#sync-push").addEventListener("click", manualPush);
+$("#sync-pull").addEventListener("click", manualPull);
+$("#toggle-autosync").addEventListener("click", async ()=>{
+  const on = !state.profile.autoSync;
+  if(on && !state.profile.syncToken){ showToast("Paste your GitHub token first.","error"); return; }
+  await saveProfile({autoSync:on});
+  renderSyncFields();
+  if(on){ showToast("Auto-sync on."); schedule(300); }
+});
+
 export function renderSyncFields(){
   const t = $("#sync-token"); if(t && document.activeElement!==t) t.value = state.profile.syncToken||"";
+  $("#toggle-autosync").classList.toggle("on", !!state.profile.autoSync);
   if(state.profile.lastSyncAt) setStatus("Last synced "+new Date(state.profile.lastSyncAt).toLocaleString());
 }
 renderSyncFields();
+schedule(1500); // on open

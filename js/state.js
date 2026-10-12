@@ -51,7 +51,7 @@ export function persist(){
     classAssignments: state.classAssignments, learnerProgress: state.learnerProgress,
     learnerHighlights: state.learnerHighlights, classNotes: state.classNotes,
   };
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(toSave)); }
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(toSave)); window.dispatchEvent(new Event("jagu:changed")); }
   catch(e){ console.warn("localStorage save failed", e); showToast("Couldn't save — your browser's local storage may be full or disabled.", "error"); }
 }
 export function loadPersisted(){
