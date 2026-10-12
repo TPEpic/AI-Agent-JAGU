@@ -4,6 +4,7 @@ import { LIVE, isLiveModel, liveSendUserText } from './live-api.js';
 import { handleUserMessage, speakDailyBriefing } from './ai.js';
 import { initFrameBanner, runDiagnostics } from './diagnostics.js';
 import './settings.js';
+import './sync.js';
 
 // ── DAILY BRIEFING (on demand) ──
 $("#daily-briefing-btn").addEventListener("click", speakDailyBriefing);

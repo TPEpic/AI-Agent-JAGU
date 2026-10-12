@@ -500,6 +500,11 @@ export async function applyActions(actions){
 
 export async function handleUserMessage(text){
   addChatBubble("user", text);
+  if(briefingOffered){
+    if(YES_RE.test(text)){ speakDailyBriefing(); return; }
+    if(NO_RE.test(text)){ briefingOffered = false; const m = "No problem — tap Daily briefing whenever you want it."; addChatBubble("assistant", m); speak(m); return; }
+    briefingOffered = false;
+  }
   setOrb("thinking");
   const res = await callJagu(text);
   addChatBubble("assistant", res.reply);
@@ -548,7 +553,12 @@ export function buildDailyBriefing(){
   return parts.join(" ");
 }
 
+let briefingOffered = false;
+const YES_RE = /^\s*(yes|yeah|yep|yup|sure|ok|okay|please|go ahead|go on|do it|read it|play it)\b/i;
+const NO_RE = /^\s*(no|nope|nah|not now|later|skip|no thanks)\b/i;
+
 export function speakDailyBriefing(){
+  briefingOffered = false;
   const msg = buildDailyBriefing();
   addChatBubble("assistant", msg);
   speak(msg);
@@ -562,13 +572,17 @@ export function greet(){
   if(st.state==="class"){
     msg = greetingWord()+", "+name+". You're in "+st.current.subject+" until "+minToLabel(timeToMin(st.current.end))+".";
   } else if(st.state==="before-hours"){
-    msg = buildDailyBriefing();
+    msg = greetingWord()+", "+name+".";
   } else if(st.state==="after-hours"){
     msg = greetingWord()+", "+name+". That's the working day done for today.";
   } else {
     const pick = pickFallbackTask(st.freeMinutes);
     msg = greetingWord()+", "+name+". You've got "+fmtMinutes(st.freeMinutes)+" free"+(pick? " — I'd suggest "+pick.t.title+".":".");
   }
+  // Don't read the briefing over the welcome -- offer it and wait for a yes
+  // (spoken, typed, or the Daily briefing button).
+  msg += " Would you like your daily briefing?";
+  briefingOffered = true;
   addChatBubble("assistant", msg);
   speak(msg);
   if(!voiceUnlocked && HAS_TTS && state.profile.voiceOut){
