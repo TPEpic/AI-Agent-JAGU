@@ -12,12 +12,14 @@ import { renderAll } from './render.js';
 // We remember a fingerprint of the data at the last sync (syncHash) and the
 // cloud copy's timestamp we last saw (syncRemoteAt), so we can tell whether
 // this device, the cloud, or both have changed since.
-const BUILD = "v13";
+const BUILD = "v14";
 const FILE = "jagu-data.json";
 const KEYS = ["projects","tasks","timetable","events","memory","updates","marking","termDates",
   "learners","enrollments","classAssignments","learnerProgress","learnerHighlights","classNotes"];
 const SYNC_ONLY = ["apiKey","geminiKey","syncToken","syncGistId","lastSyncAt","syncHash","syncRemoteAt","autoSync","lastBackupAt"];
-const api = (path, opts={})=> fetch("https://api.github.com"+path, Object.assign({}, opts, {
+// GitHub answers authenticated GETs with "max-age=60", so a browser can hand back a
+// minute-old copy of the gist. Bypass the HTTP cache and add a throwaway query param.
+const api = (path, opts={})=> fetch("https://api.github.com"+path+((opts.method||"GET")==="GET" ? (path.includes("?")?"&":"?")+"_="+Date.now() : ""), Object.assign({cache:"no-store"}, opts, {
   headers: Object.assign({Authorization:"Bearer "+state.profile.syncToken, Accept:"application/vnd.github+json", "Content-Type":"application/json"}, opts.headers||{}),
 }));
 
@@ -40,16 +42,18 @@ const summary = (d)=> (d.timetable||[]).length+" classes, "+(d.learners||[]).len
 
 function setStatus(t){ const el = $("#sync-status"); if(el) el.textContent = t; }
 
-async function findGist(){
+// Every gist in the account holding JAGU data, newest first. (Normally one -- but if a
+// second one ever got created, always follow the most recently updated.)
+async function listGists(){
   const res = await api("/gists?per_page=100");
-  if(!res.ok) return null;
+  if(!res.ok) return [];
   const list = await res.json();
-  const g = list.find(x=> x.files && x.files[FILE]);
-  return g ? g.id : null;
+  return list.filter(x=> x.files && x.files[FILE]).sort((a,b)=> String(b.updated_at).localeCompare(String(a.updated_at)));
 }
-// → {id, data} | null (no cloud copy yet). Throws on network / auth failure.
+// → {id, data, updatedAt} | null (no cloud copy yet). Throws on network / auth failure.
 async function fetchRemote(){
-  const id = state.profile.syncGistId || await findGist();
+  const gists = await listGists();
+  const id = gists.length ? gists[0].id : state.profile.syncGistId;
   if(!id) return null;
   const res = await api("/gists/"+id);
   if(res.status===404) return null;
@@ -58,9 +62,10 @@ async function fetchRemote(){
   const f = g.files && g.files[FILE];
   if(!f) return null;
   let text = f.content;
-  if(f.truncated && f.raw_url) text = await (await fetch(f.raw_url)).text();
-  return {id, data: JSON.parse(text)};
+  if(f.truncated && f.raw_url) text = await (await fetch(f.raw_url+"?_="+Date.now(), {cache:"no-store"})).text();
+  return {id, data: JSON.parse(text), updatedAt: g.updated_at, gistCount: gists.length};
 }
+const where = (r)=> " [cloud copy "+r.id.slice(0,7)+", updated "+new Date(r.updatedAt||r.data.savedAt).toLocaleString()+"]";
 
 async function pushNow(){
   const savedAt = new Date().toISOString();
@@ -120,7 +125,7 @@ async function manualPull(){
     if(!r){ setStatus("No JAGU data found in this GitHub account yet — tap Upload on your main device first."); return; }
     if(!confirm("This replaces the data on this device with the synced copy from "+(r.data.savedAt?new Date(r.data.savedAt).toLocaleString():"GitHub")+". Continue?")){ setStatus(""); return; }
     await applyRemote(r.id, r.data);
-    setStatus("Downloaded "+summary(r.data)+" at "+new Date().toLocaleString()+".");
+    setStatus("Downloaded "+summary(r.data)+" at "+new Date().toLocaleString()+where(r)+(r.gistCount>1?" — note: you have "+r.gistCount+" JAGU gists; the newest was used.":""));
     showToast("Downloaded "+summary(r.data)+".");
   }catch(e){ fail(e); showToast("Sync download failed.","error"); }
 }
