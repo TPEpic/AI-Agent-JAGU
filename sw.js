@@ -2,7 +2,7 @@
 // Strategy: network-first (so a fresh deploy is always picked up while
 // online, instead of getting stuck showing an old cached version), falling
 // back to the cache when offline.
-const CACHE_NAME = 'jagu-shell-v4';
+const CACHE_NAME = 'jagu-shell-v5';
 const PRECACHE_URLS = [
   './', './index.html', './manifest.json', './favicon.svg',
   './css/styles.css',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event)=>{
   if(url.origin !== self.location.origin) return; // never intercept cross-origin (fonts, APIs)
 
   event.respondWith(
-    fetch(event.request).then(res=>{
+    fetch(event.request, {cache:'no-cache'}).then(res=>{
       const copy = res.clone();
       caches.open(CACHE_NAME).then(cache=> cache.put(event.request, copy));
       return res;

@@ -90,7 +90,7 @@ async function applyRemote(id, data){
 const fail = (e)=>{
   console.warn("sync failed", e);
   const m = String(e&&e.message||e);
-  setStatus(/ 40[13]/.test(m) ? "GitHub rejected the token — check it has the 'gist' permission and hasn't expired." : "Sync failed — check your connection.");
+  setStatus(/ 40[13]/.test(m) ? "GitHub rejected the token — check it has the 'gist' permission and hasn't expired." : "Sync failed ("+m+") — check your connection.");
 };
 
 // ── Manual buttons ──
@@ -160,21 +160,31 @@ window.addEventListener("jagu:changed", ()=>{
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") schedule(500); });
 window.addEventListener("online", ()=> schedule(1000));
 
-$("#sync-token").addEventListener("change", (e)=>{ saveProfile({syncToken:e.target.value.trim()}); showToast("Token saved on this device."); });
-$("#sync-push").addEventListener("click", manualPush);
-$("#sync-pull").addEventListener("click", manualPull);
+// Tablets often don't fire "change" on a pasted field before the next tap,
+// so save the token as it's typed AND re-read the box right before any action.
+function readToken(){
+  const v = ($("#sync-token").value||"").trim().replace(/^["']|["']$/g,"");
+  if(v && v!==state.profile.syncToken) state.profile.syncToken = v;
+  return state.profile.syncToken;
+}
+$("#sync-token").addEventListener("input", (e)=>{ saveProfile({syncToken:(e.target.value||"").trim()}); setStatus("Token saved on this device."); });
+$("#sync-token").addEventListener("change", ()=>{ readToken(); saveProfile({}); showToast("Token saved on this device."); });
+const needToken = ()=>{ if(readToken()) return false; setStatus("⚠ Paste your GitHub token in the box above first."); showToast("Paste your GitHub token first.","error"); return true; };
+$("#sync-push").addEventListener("click", ()=>{ if(!needToken()) manualPush(); });
+$("#sync-pull").addEventListener("click", ()=>{ if(!needToken()) manualPull(); });
 $("#toggle-autosync").addEventListener("click", async ()=>{
   const on = !state.profile.autoSync;
-  if(on && !state.profile.syncToken){ showToast("Paste your GitHub token first.","error"); return; }
+  if(on && needToken()) return;
   await saveProfile({autoSync:on});
   renderSyncFields();
+  setStatus(on ? "Auto-sync is ON for this device." : "Auto-sync is off.");
   if(on){ showToast("Auto-sync on."); schedule(300); }
 });
 
 export function renderSyncFields(){
   const t = $("#sync-token"); if(t && document.activeElement!==t) t.value = state.profile.syncToken||"";
   $("#toggle-autosync").classList.toggle("on", !!state.profile.autoSync);
-  if(state.profile.lastSyncAt) setStatus("Last synced "+new Date(state.profile.lastSyncAt).toLocaleString());
+  if(state.profile.lastSyncAt && !$("#sync-status").textContent) setStatus("Last synced "+new Date(state.profile.lastSyncAt).toLocaleString());
 }
 renderSyncFields();
 schedule(1500); // on open
