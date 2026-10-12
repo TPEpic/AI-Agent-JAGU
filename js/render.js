@@ -596,7 +596,10 @@ function populateVoices(){
 }
 if("speechSynthesis" in window){
   speechSynthesis.onvoiceschanged = populateVoices;
-  populateVoices();
+  // Deferred: this module loads before state.js finishes (import cycle), and on
+  // browsers whose voice list is ready immediately (tablets), reading `state`
+  // here threw "Cannot access 'state' before initialization".
+  setTimeout(populateVoices, 0);
 }
 
 export function renderSettingsFields(){
