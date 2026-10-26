@@ -155,21 +155,22 @@ export function openClassNotesModal(classId){
 }
 
 const TIMETABLE_IMPORT_PLACEHOLDER = [
-  {day:0, start:"09:00", end:"10:30", subject:"L2 ICT GB — Digital Portfolio", room:"CH225"},
-  {day:0, start:"10:45", end:"12:00", subject:"T Level DSS Year 2 — Programming Concepts", room:"SR409"},
-  {day:0, start:"13:00", end:"14:30", subject:"L2 ICT GA — Maths", room:"CH224"},
-  {day:0, start:"14:45", end:"16:15", subject:"T Level DSS Year 1 — Employer Set Project, Part 01", room:"CH212"},
+  {day:0, start:"09:00", end:"10:30", subject:"L2 ICT GA — Digital Portfolio", room:"CH224"},
+  {day:0, start:"10:45", end:"12:15", subject:"L2 ICT GB — Digital Portfolio", room:"CH225"},
+  {day:0, start:"15:00", end:"16:30", subject:"T Level DSD Year 2 — Task 01", room:"CH214"},
   {day:1, start:"09:00", end:"10:30", subject:"L2 ICT GA — Digital Portfolio", room:"CH224"},
-  {day:1, start:"10:45", end:"12:15", subject:"L2 ICT GB — Digital Portfolio", room:"CH225"},
-  {day:1, start:"14:45", end:"16:15", subject:"Access HE - DS — Machine Learning Models", room:"CH226"},
-  {day:2, start:"09:00", end:"10:30", subject:"T Level DA Year 2 — Programming Concepts", room:"CH214"},
-  {day:2, start:"09:00", end:"10:30", subject:"T Level Prg Year 2 — Occupational Specialism Advanced, Part 02 Coding", room:"CH214"},
-  {day:2, start:"10:45", end:"12:15", subject:"T Level DA Year 2 — Hardware & Networking", room:"CH214"},
-  {day:2, start:"10:45", end:"12:15", subject:"T Level Prg Year 2 — Technology Concepts", room:"CH214"},
-  {day:3, start:"09:00", end:"10:30", subject:"L3 Year 1 GB — Principles of Computer Science", room:"CH211"},
-  {day:3, start:"13:00", end:"14:30", subject:"L2 ICT GB — Digital Employability Skills", room:"CH202"},
-  {day:3, start:"14:45", end:"16:15", subject:"L2 ICT GA — Digital Employability Skills", room:"CH201"},
-  {day:4, start:"09:00", end:"10:30", subject:"L3 Year 1 GB — Fundamentals of Computer Science", room:"CH212"},
+  {day:1, start:"10:45", end:"12:15", subject:"L2 ICT GB — Digital Portfolio", room:"CH202"},
+  {day:1, start:"13:15", end:"14:45", subject:"T Level DSD Year 2 — Task 01", room:"CH214"},
+  {day:1, start:"15:00", end:"16:30", subject:"T Level DSD Year 2 — Task 01", room:"CH214"},
+  {day:2, start:"09:00", end:"10:30", subject:"L3 Year 1 — Fundamentals of Computer Science", room:"CH227"},
+  {day:2, start:"10:45", end:"12:15", subject:"L3 Year 2 — Software Development", room:"CH202"},
+  {day:2, start:"13:15", end:"14:45", subject:"L3 Year 2 — Software Development", room:"CH202"},
+  {day:2, start:"15:00", end:"16:30", subject:"L3 Year 1 — Fundamentals of Computer Science", room:"CH202"},
+  {day:3, start:"09:00", end:"10:30", subject:"L2 ICT GB — Digital Portfolio", room:"CH202"},
+  {day:3, start:"10:45", end:"12:15", subject:"L2 ICT GA — Digital Portfolio", room:"CH201"},
+  {day:3, start:"13:15", end:"14:45", subject:"L3 Year 1 — Fundamentals of Computer Science", room:"CH212"},
+  {day:4, start:"09:00", end:"10:30", subject:"L3 Year 1 — Fundamentals of Computer Science", room:"CH211"},
+  {day:4, start:"10:45", end:"12:15", subject:"L3 Year 1 — Digital Employability Skills", room:"CH211"},
 ];
 
 function openImportModal(){
@@ -178,7 +179,7 @@ function openImportModal(){
   root.innerHTML = '<div class="sheet">'
     + '<div class="sheet-handle"></div>'
     + '<p class="sheet-title">Import timetable</p>'
-    + '<p style="color:var(--text-dim); font-size:13px; margin-bottom:14px; line-height:1.5;">Your corrected timetable is already filled in below — just hit Import. To bring in a different set later, paste your own JSON here in the same shape (day: 0=Mon…6=Sun).</p>'
+    + '<p style="color:var(--text-dim); font-size:13px; margin-bottom:14px; line-height:1.5;">Your new timetable (from Monday 2 November 2026) is already filled in below — tick “Clear existing timetable first” to replace the old one, then hit Import all. To bring in a different set later, paste your own JSON here in the same shape (day: 0=Mon…6=Sun).</p>'
     + '<textarea id="import-json" class="text-field" style="height:220px; font-family:var(--font-m); font-size:11.5px; resize:vertical;">'+esc(json)+'</textarea>'
     + '<label class="settings-row" style="padding:12px 0 4px; border:none;"><span style="font-size:13px;">Clear existing timetable first</span><input type="checkbox" id="import-clear-first"></label>'
     + '<div class="modal-actions sticky-actions"><button type="button" id="import-cancel" class="btn-full ghost">Cancel</button><button type="button" id="import-confirm" class="btn-full">Import all</button></div>'
